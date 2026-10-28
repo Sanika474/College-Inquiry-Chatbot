@@ -173,6 +173,37 @@ User Input
                       - Directs student to JDCOEM MCA Office, Contact Numbers, and Suggestion Chips.
 ```
 
+### Conversational Request Lifecycle Sequence
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as Student / Visitor
+    participant Browser as CampusIQ Web Client
+    participant API as FastAPI REST Gateway (/api/v1/chat)
+    participant Engine as Rule & Intent Engine
+    participant DB as PostgreSQL 18 Relational DB
+    participant AI as Grounded AI Fallback (Gemini)
+
+    Student->>Browser: Enters Query (e.g. "What is the MCA fee?")
+    Browser->>API: POST /api/v1/chat (with Session Cookie)
+    API->>Engine: Normalize & Classify Intent
+    alt Intent Matches Rule Catalog (Confidence >= 0.70)
+        Engine->>DB: Query FRA Fee Schedule & Course Data
+        DB-->>Engine: Return ₹91,500/yr (Tuition + Dev Fee)
+        Engine-->>API: Deterministic Response + Suggestion Chips
+    else Query Ambiguous (Competing Intents)
+        Engine-->>API: Clarification Prompt ("Did you mean MCA or B.Tech?")
+    else Out of Domain & AI Configured
+        Engine->>AI: Prompt Gemini with JDCOEM MCA Guardrails (5s timeout)
+        AI-->>Engine: Grounded Conversational Guidance
+        Engine-->>API: AI Fallback Response
+    end
+    API->>DB: Persist Conversation Turn in [messages] table
+    API-->>Browser: Return JSON Payload (Markdown, Badges, SFX trigger)
+    Browser-->>Student: Render Message & Audio Feedback
+```
+
 ### Deterministic Rule Engine vs. Pure Generative AI
 
 | Dimension | Pure Generative AI (LLM Only) | CampusIQ Hybrid Engine (Rule Engine + Fallback) |
