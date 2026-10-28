@@ -1,655 +1,200 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"> <!-- Specifies the character encoding for the document -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Configures the viewport for responsive design -->
-    <title>About Us - College Companion</title> <!-- Sets the title of the page -->
-    <!-- Link to Google Fonts for the 'Inter' font family -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* CSS Variables for consistent styling */
-        :root {
-            --primary-bg: #0a0a0a; /* Primary background color */
-            --accent-1: #00ff9d; /* First accent color (neon green) */
-            --accent-2: #0095ff; /* Second accent color (blue) */
-            --text-primary: #f0f0f0; /* Primary text color */
-            --text-secondary: #888; /* Secondary text color */
-            /* Neon glow effect for specific elements */
-            --neon-glow: 0 0 10px rgba(0, 255, 157, 0.5),
-                         0 0 20px rgba(0, 255, 157, 0.3),
-                         0 0 30px rgba(0, 149, 255, 0.2);
-        }
-
-        /* Basic reset for all elements */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box; /* Include padding and border in element's total width and height */
-        }
-
-        /* Body styling */
-        body {
-            font-family: 'Inter', sans-serif; /* Set default font */
-            background: linear-gradient(135deg, #0a0a0a 0%, #001a2c 100%); /* Gradient background */
-            color: var(--text-primary); /* Set default text color */
-            overflow-x: hidden; /* Prevent horizontal scrolling */
-            min-height: 100vh; /* Ensure body takes at least the full viewport height */
-        }
-
-        /* Header styling */
-        .cyber-header {
-            padding: 1.5rem 5%; /* Padding top/bottom and left/right */
-            position: fixed; /* Keep header fixed at the top */
-            width: 100%; /* Full width */
-            top: 0; /* Position at the top */
-            z-index: 100; /* Ensure header is above other content */
-            background: rgba(10, 10, 10, 0.95); /* Semi-transparent background */
-            backdrop-filter: blur(10px); /* Apply blur effect to background */
-            border-bottom: 1px solid var(--accent-1); /* Neon green bottom border */
-            box-shadow: 0 5px 20px rgba(0, 255, 157, 0.1); /* Subtle shadow */
-        }
-
-        /* Navigation container styling */
-        .nav-container {
-            display: flex; /* Use flexbox for layout */
-            justify-content: space-between; /* Space items evenly */
-            align-items: center; /* Align items vertically */
-            max-width: 1200px; /* Maximum width of the container */
-            margin: 0 auto; /* Center the container */
-        }
-
-        /* Navigation links styling */
-        .nav-links a {
-            color: var(--text-primary); /* Text color */
-            text-decoration: none; /* Remove underline */
-            margin-left: 2rem; /* Space between links */
-            position: relative; /* Needed for potential pseudo-elements */
-            transition: color 0.3s ease; /* Smooth color transition on hover */
-        }
-
-        /* Navigation link hover effect */
-        .nav-links a:hover {
-            color: var(--accent-1); /* Change color to neon green on hover */
-        }
-
-        /* Main content container styling */
-        .about-container {
-            padding: 8rem 2rem 4rem; /* Padding top, left/right, bottom */
-            max-width: 1400px; /* Maximum width */
-            margin: 0 auto; /* Center the container */
-        }
-
-        /* Hero section styling */
-        .hero-section {
-            display: flex; /* Use flexbox */
-            align-items: center; /* Align items vertically */
-            justify-content: space-between; /* Space items */
-            gap: 4rem; /* Gap between flex items */
-            margin-bottom: 4rem; /* Bottom margin */
-            min-height: 80vh; /* Minimum height */
-        }
-
-        /* Hero content styling */
-        .hero-content {
-            flex: 1; /* Take up available space */
-            padding-right: 2rem; /* Right padding */
-        }
-
-        /* Brain model container styling */
-        .brain-model {
-            flex: 1; /* Take up available space */
-            height: 600px; /* Fixed height */
-            position: relative; /* Needed for absolute positioning or animations */
-            border-radius: 20px; /* Rounded corners */
-            overflow: hidden; /* Hide overflowing content (like the iframe) */
-            background: rgba(0, 20, 40, 0.3); /* Semi-transparent background */
-            box-shadow: var(--neon-glow); /* Apply neon glow */
-            animation: pulseContainer 4s ease-in-out infinite; /* Apply pulsing animation */
-        }
-
-        /* Keyframes for the brain model container pulsing animation */
-        @keyframes pulseContainer {
-            0%, 100% { transform: scale(1); box-shadow: var(--neon-glow); } /* Start and end state */
-            50% { transform: scale(1.02); box-shadow: 0 0 20px rgba(0, 255, 157, 0.7),
-                                                     0 0 40px rgba(0, 255, 157, 0.4),
-                                                     0 0 60px rgba(0, 149, 255, 0.3); } /* Mid-animation state */
-        }
-
-        /* College name heading styling */
-        .college-name {
-            font-size: 3.5rem; /* Font size */
-            line-height: 1.2; /* Line height */
-            margin-bottom: 2rem; /* Bottom margin */
-            position: relative; /* Needed for pseudo-element */
-            display: inline-block; /* Allows pseudo-element positioning */
-        }
-
-        /* Glitch effect for college name */
-        .college-name::before {
-            content: ''; /* Required for pseudo-elements */
-            position: absolute; /* Position relative to the parent */
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            background: linear-gradient(45deg, var(--accent-1), var(--accent-2)); /* Gradient background */
-            -webkit-background-clip: text; /* Clip background to text */
-            -webkit-text-fill-color: transparent; /* Make text transparent to show background */
-            animation: glitchText 5s infinite linear alternate; /* Apply glitch animation */
-        }
-
-        /* Keyframes for the glitch text animation */
-        @keyframes glitchText {
-            0%, 100% { clip-path: inset(0 0 0 0); }
-            20% { clip-path: inset(20% 0 0 0); } /* Clip top */
-            40% { clip-path: inset(0 20% 0 0); } /* Clip right */
-            60% { clip-path: inset(0 0 20% 0); } /* Clip bottom */
-            80% { clip-path: inset(0 0 0 20%); } /* Clip left */
-        }
-
-        /* Team grid styling */
-        .team-grid {
-            display: grid; /* Use CSS Grid */
-            /* Create responsive columns: fit as many 280px columns as possible */
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem; /* Gap between grid items */
-            margin-top: 4rem; /* Top margin */
-        }
-
-        /* Team card styling */
-        .team-card {
-            background: rgba(255, 255, 255, 0.03); /* Very subtle light background */
-            border-radius: 15px; /* Rounded corners */
-            padding: 2rem; /* Padding inside the card */
-            position: relative; /* Needed for pseudo-element and hover effects */
-            overflow: hidden; /* Hide overflowing pseudo-element */
-            transition: all 0.4s ease; /* Smooth transition for all properties */
-        }
-
-        /* Team card hover effect - sliding gradient */
-        .team-card::before {
-            content: ''; /* Required for pseudo-elements */
-            position: absolute; /* Position relative to the card */
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            /* Diagonal gradient overlay */
-            background: linear-gradient(45deg,
-                transparent 0%,
-                rgba(0, 255, 157, 0.1) 50%,
-                transparent 100%);
-            transform: translateX(-100%); /* Initially off-screen to the left */
-            transition: transform 0.6s ease; /* Smooth transition for the slide */
-        }
-
-        /* Team card hover state */
-        .team-card:hover {
-            transform: translateY(-10px); /* Lift the card slightly */
-            box-shadow: var(--neon-glow); /* Add neon glow */
-        }
-
-        /* Team card hover state for the pseudo-element */
-        .team-card:hover::before {
-            transform: translateX(100%); /* Slide the gradient across */
-        }
-
-        /* Team member name styling */
-        .member-name {
-            font-size: 1.5rem; /* Font size */
-            font-weight: 700; /* Bold font weight */
-            margin-bottom: 0.5rem; /* Bottom margin */
-            /* Apply gradient text effect */
-            background: linear-gradient(45deg, var(--accent-1), var(--accent-2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Team member role styling */
-        .member-role {
-            color: var(--text-secondary); /* Secondary text color */
-            font-size: 1rem; /* Font size */
-            text-transform: uppercase; /* Uppercase text */
-            letter-spacing: 2px; /* Increased letter spacing */
-            position: relative; /* Needed for pseudo-element */
-            padding-left: 1rem; /* Space for the pseudo-element */
-        }
-
-        /* Small dot before the member role */
-        .member-role::before {
-            content: ''; /* Required */
-            position: absolute; /* Position relative to the role text */
-            left: 0; /* Position at the start of the padding */
-            top: 50%; /* Center vertically */
-            width: 5px; /* Dot width */
-            height: 5px; /* Dot height */
-            background: var(--accent-1); /* Neon green color */
-            border-radius: 50%; /* Make it a circle */
-            transform: translateY(-50%); /* Fine-tune vertical centering */
-        }
-
-        /* Academic information section styling */
-        .academic-info {
-            text-align: center; /* Center text */
-            margin-top: 4rem; /* Top margin */
-            padding: 2rem; /* Padding */
-            background: rgba(0, 255, 157, 0.05); /* Subtle green background */
-            border-radius: 15px; /* Rounded corners */
-            position: relative; /* Needed for pseudo-element */
-            overflow: hidden; /* Hide overflowing pseudo-element */
-        }
-
-        /* Text styling within academic info */
-        .academic-info p {
-            font-size: 1.2rem; /* Font size */
-            letter-spacing: 2px; /* Letter spacing */
-            text-transform: uppercase; /* Uppercase text */
-            /* Gradient text effect */
-            background: linear-gradient(45deg, var(--accent-1), var(--accent-2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            padding: 1rem; /* Padding */
-            position: relative; /* Ensure text is above the pseudo-element */
-            z-index: 1; /* Stack text above the rotating gradient */
-        }
-
-        /* Rotating gradient background effect for academic info */
-        .academic-info::before {
-            content: ''; /* Required */
-            position: absolute; /* Position relative to the container */
-            top: -50%; /* Position offset */
-            left: -50%; /* Position offset */
-            width: 200%; /* Make it larger than the container */
-            height: 200%; /* Make it larger than the container */
-            /* Rotating gradient */
-            background: linear-gradient(
-                45deg,
-                transparent,
-                rgba(0, 255, 157, 0.1),
-                transparent
-            );
-            animation: rotateGradient 8s linear infinite; /* Apply rotation animation */
-        }
-
-        /* Keyframes for the rotating gradient animation */
-        @keyframes rotateGradient {
-            0% { transform: rotate(0deg); } /* Start rotation */
-            100% { transform: rotate(360deg); } /* End rotation (full circle) */
-        }
-
-        /* Responsive Design Media Queries */
-
-        /* Styles for screens up to 1024px wide (tablets, small laptops) */
-        @media (max-width: 1024px) {
-            .hero-section {
-                flex-direction: column; /* Stack items vertically */
-                gap: 2rem; /* Reduce gap */
-            }
-
-            .hero-content {
-                padding-right: 0; /* Remove right padding */
-                text-align: center; /* Center text */
-            }
-
-            .brain-model {
-                width: 100%; /* Full width */
-                height: 400px; /* Reduce height */
-            }
-
-            .team-grid {
-                grid-template-columns: repeat(2, 1fr); /* Two columns */
-            }
-        }
-
-        /* Styles for screens up to 768px wide (large phones, small tablets) */
-        @media (max-width: 768px) {
-            .about-container {
-                padding: 6rem 1rem 2rem; /* Adjust padding */
-            }
-
-            .team-grid {
-                grid-template-columns: 1fr; /* Single column */
-                gap: 1.5rem; /* Reduce gap */
-            }
-
-            .team-card {
-                padding: 1.5rem; /* Reduce padding */
-            }
-
-            .brain-model {
-                height: 300px; /* Further reduce height */
-            }
-
-            /* Hide desktop navigation links */
-            .nav-links {
-                display: none; /* Hide by default */
-                position: fixed; /* Keep it fixed relative to viewport (will be changed later) */
-                top: 80px; /* Position below header */
-                left: 0;
-                width: 100%;
-                background: rgba(10, 10, 10, 0.95); /* Background for mobile menu */
-                padding: 1rem;
-                flex-direction: column; /* Stack links vertically */
-                align-items: center; /* Center links */
-            }
-
-            /* Show mobile navigation links when active */
-            .nav-links.active {
-                display: flex; /* Show the menu */
-            }
-
-            /* Styling for individual links in mobile menu */
-            .nav-links a {
-                margin: 1rem 0; /* Vertical margin */
-            }
-
-            /* Show the menu toggle button */
-            .menu-toggle {
-                display: block; /* Make it visible */
-                cursor: pointer; /* Indicate it's clickable */
-            }
-
-            .college-name {
-                font-size: 2rem; /* Reduce font size */
-            }
-        }
-
-        /* Styles for screens up to 480px wide (standard phones) */
-        @media (max-width: 480px) {
-            .about-container {
-                padding: 6rem 1rem 2rem; /* Adjust padding */
-            }
-
-            .college-name {
-                font-size: 1.8rem; /* Further reduce font size */
-            }
-
-            .brain-model {
-                height: 250px; /* Further reduce height */
-            }
-        }
-
-        /* Project description styling */
-        .project-description {
-            line-height: 1.8; /* Increase line spacing */
-            font-size: 1.1rem; /* Font size */
-            margin-top: 2rem; /* Top margin */
-            padding: 1.5rem; /* Padding */
-            background: rgba(255, 255, 255, 0.03); /* Subtle background */
-            border-radius: 15px; /* Rounded corners */
-            border: 1px solid rgba(0, 255, 157, 0.2); /* Subtle border */
-        }
-
-        /* Highlighted text styling */
-        .highlight {
-            color: var(--accent-1); /* Neon green color */
-            font-weight: 600; /* Semi-bold */
-        }
-
-        /* Mobile menu toggle button (hamburger icon) styling */
-        .menu-toggle {
-            display: none; /* Hidden by default on larger screens */
-            flex-direction: column; /* Stack bars vertically */
-            gap: 6px; /* Space between bars */
-            padding: 5px; /* Padding around bars */
-            z-index: 101; /* Ensure it's above the header background */
-            cursor: pointer; /* Indicate clickability */
-        }
-
-        /* Individual bars of the hamburger icon */
-        .menu-toggle .bar {
-            width: 25px; /* Bar width */
-            height: 2px; /* Bar height */
-            background: var(--text-primary); /* Bar color */
-            transition: 0.3s; /* Smooth transition for animation */
-        }
-
-        /* Animation for the top bar when menu is active (forms an 'X') */
-        .menu-toggle.active .bar:nth-child(1) {
-            transform: rotate(45deg) translate(6px, 6px);
-        }
-
-        /* Hide the middle bar when menu is active */
-        .menu-toggle.active .bar:nth-child(2) {
-            opacity: 0;
-        }
-
-        /* Animation for the bottom bar when menu is active (forms an 'X') */
-        .menu-toggle.active .bar:nth-child(3) {
-            transform: rotate(-45deg) translate(6px, -6px);
-        }
-
-        /* Responsive adjustments for mobile navigation positioning */
-        @media (max-width: 768px) {
-            .nav-container { /* Added relative positioning */
-                position: relative; /* Needed for absolute positioning of the mobile menu */
-            }
-
-            .nav-links {
-                display: none; /* Ensure it's hidden by default */
-                position: absolute; /* Position relative to nav-container */
-                top: 100%; /* Position directly below the header */
-                left: 0;
-                width: 100%;
-                background: rgba(10, 10, 10, 0.95); /* Background */
-                padding: 1rem;
-                flex-direction: column; /* Stack links */
-                align-items: center; /* Center links */
-                backdrop-filter: blur(10px); /* Blur effect */
-                border-bottom: 1px solid var(--accent-1); /* Bottom border */
-                z-index: 100; /* Ensure it's below the toggle button but above content */
-            }
-
-            /* Show mobile menu when active */
-            .nav-links.active {
-                display: flex;
-            }
-
-            /* Styling for links within the mobile menu */
-            .nav-links a {
-                margin: 1rem 0; /* Vertical margin */
-                font-size: 1.1rem; /* Font size */
-                width: 100%; /* Full width */
-                text-align: center; /* Center text */
-                padding: 0.5rem; /* Padding */
-            }
-
-            /* Ensure the menu toggle is displayed as flex */
-            .menu-toggle {
-                display: flex;
-            }
-        }
-
-        /* Modal styling */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .modal.show {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 1;
-        }
-
-        .modal-content {
-            max-width: 80%;
-            max-height: 80vh;
-            transform: scale(0.7);
-            opacity: 0;
-            transition: all 0.3s ease;
-            border: 2px solid var(--accent-1);
-            box-shadow: var(--neon-glow);
-        }
-
-        .modal.show .modal-content {
-            transform: scale(1);
-            opacity: 1;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            color: var(--accent-1);
-            font-size: 30px;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-
-        .modal-close:hover {
-            transform: scale(1.2);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About JDCOEM & MCA Department — CampusIQ</title>
+  <meta name="description" content="Learn about JD College of Engineering & Management (JDCOEM), Nagpur, an autonomous NAAC 'A' Grade institute, and its Master of Computer Applications (MCA) department.">
+  <link rel="stylesheet" href="assets/css/campusiq.css">
+  <link rel="icon" type="image/png" href="images/favicon.png" onerror="this.href='images/icon.png'">
 </head>
 <body>
-    <!-- Header section -->
-    <header class="cyber-header">
-        <nav class="nav-container">
-            <!-- Logo/Brand Name -->
-            <h1><a href="index.html" style="text-decoration: none; color: var(--text-primary);">
-                College <span style="color: var(--accent-1);">Companion</span> <!-- Companion part highlighted -->
-            </a></h1>
-            <!-- Navigation links container (populated by JavaScript) -->
-            <div class="nav-links">
-                <!-- Links will be populated by auth.js based on login status -->
-            </div>
-            <!-- Mobile menu toggle button (hamburger icon) -->
-            <div class="menu-toggle">
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-            </div>
-        </nav>
-    </header>
+  <div class="ambient-bg"></div>
+  <div class="ambient-grid"></div>
 
-    <!-- Main content area -->
-    <main class="about-container">
-        <!-- Hero section with college name and 3D model -->
-        <section class="hero-section">
-            <!-- Left side content -->
-            <div class="hero-content">
-                <h1 class="college-name">Brijlal Biyani Science College</h1>
-                <p class="project-description">
-                    Welcome to <span class="highlight">College Companion</span> - An innovative
-                    AI-powered chatbot designed to enhance the college experience.
-                    <br><br>
-                    This project represents our commitment to bringing
-                    <span class="highlight">cutting-edge technology</span> to academic support services.
-                </p>
-            </div>
-            <!-- Right side content (3D brain model) -->
-            <div class="brain-model">
-                <!-- Embedded 3D model using iframe from Spline -->
-                <iframe
-                    src="https://my.spline.design/particleaibrain-632951f6f863ed73e8ebb59c67bb6ca0/"
-                    frameborder="0" /* Remove iframe border */
-                    width="100%"
-                    height="100%"
-                    style="mix-blend-mode: screen; transform: scale(1.2);" /* Styling for visual effect */
-                ></iframe>
-            </div>
-        </section>
+  <!-- Header -->
+  <header class="campusiq-nav">
+    <a href="index.html" class="nav-brand">
+      <div class="brand-emblem">JD</div>
+      <div class="brand-title">
+        <span class="brand-title-main">CampusIQ</span>
+        <span class="brand-title-sub">JDCOEM Nagpur</span>
+      </div>
+    </a>
+    <nav>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="bot.html" class="nav-link">CampusIQ Bot</a></li>
+        <li><a href="about_us.html" class="nav-link active">About JDCOEM</a></li>
+      </ul>
+    </nav>
+    <div class="nav-actions" id="nav-auth-container">
+      <a href="login.html" class="btn btn-sm btn-secondary">Sign In</a>
+      <a href="signup.html" class="btn btn-sm btn-primary">Register</a>
+    </div>
+  </header>
 
-        <!-- Team section displaying project members -->
-        <section class="team-grid">
-            <!-- Individual team member cards -->
-            <div class="team-card">
-                <div class="member-name team-member-name-hover">Sahil Thakur</div>
-                <div class="member-role">Main Developer</div>
-            </div>
-            <div class="team-card">
-                <div class="member-name team-member-name-hover">Manaswi Ingale</div>
-                <div class="member-role">Developer</div>
-            </div>
-            <div class="team-card">
-                <div class="member-name team-member-name-hover">Sanika Jirapure</div>
-                <div class="member-role">Developer</div>
-            </div>
-            <div class="team-card">
-                <div class="member-name team-member-name-hover">Shilpa Tayade</div>
-                <div class="member-role">Developer</div>
-            </div>
-            <div class="team-card">
-                <div class="member-name team-member-name-hover">Achal Jane</div>
-                <div class="member-role">Developer</div>
-            </div>
-        </section>
+  <main style="max-width: 1200px; margin: 2.5rem auto 5rem; padding: 0 1.5rem;">
+    <!-- Institutional Overview Banner -->
+    <div class="card" style="margin-bottom: 2.5rem; padding: 2.5rem;">
+      <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+        <span class="badge badge-naac">NAAC 'A' Grade</span>
+        <span class="badge badge-autonomous">Autonomous Institute</span>
+        <span class="badge badge-mca">DTE Code: 04138</span>
+        <span class="badge badge-mca">DBATU Affiliated</span>
+      </div>
 
-        <!-- Academic information section -->
-        <div class="academic-info">
-            <p>
-                <span style="font-weight: 700">Final Year BCA Project</span>
-                <br>
-                <span style="font-size: 0.9em; opacity: 0.9">Academic Session 2024-25</span>
-            </p>
+      <h1 style="font-size: 2.4rem; font-weight: 800; margin-bottom: 1rem; letter-spacing: -0.02em;">
+        JD College of Engineering and Management (JDCOEM)
+      </h1>
+      <p style="font-size: 1.05rem; color: var(--text-secondary); line-height: 1.7; max-width: 900px;">
+        Established in 2008 at Nagpur, Maharashtra, JDCOEM is a premier autonomous educational campus spread across 25+ acres on Kalmeshwar Road. With the guiding motto <em>"Education to Eternity"</em>, the institute is accredited with NAAC 'A' Grade and affiliated with Dr. Babasaheb Ambedkar Technological University (DBATU), Lonere.
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-subtle);">
+        <div>
+          <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Director & Principal</div>
+          <div style="font-size: 1.1rem; font-weight: 700; color: #fff;">Dr. Shrikant V. Sonekar</div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary);">Ph.D. Electronics (25+ yrs exp)</div>
         </div>
-    </main>
-
-    <!-- Add modal container at the end of body -->
-    <div class="modal" id="imageModal">
-        <span class="modal-close">&times;</span>
-        <img src="images/sahil.jpg" alt="Sahil" class="modal-content">
+        <div>
+          <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Campus Location</div>
+          <div style="font-size: 1.1rem; font-weight: 700; color: #fff;">Khandala/Valni, Nagpur</div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary);">Kalmeshwar Road, 441501</div>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Helpline Channels</div>
+          <div style="font-size: 1.1rem; font-weight: 700; color: #fff;">+91-90110 10038</div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary);">info@jdcoem.ac.in</div>
+        </div>
+      </div>
     </div>
 
-    <!-- JavaScript for mobile menu toggle functionality -->
-    <script>
-        // Get the menu toggle button and navigation links container
-        const menuToggle = document.querySelector('.menu-toggle');
-        const navLinks = document.querySelector('.nav-links');
+    <!-- Core Showcase: MCA Department -->
+    <div style="margin-bottom: 3.5rem;">
+      <div style="margin-bottom: 1.5rem;">
+        <span class="badge badge-mca" style="margin-bottom: 0.5rem;">Department In Focus</span>
+        <h2 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;">
+          Department of Master of Computer Applications (MCA)
+        </h2>
+        <p style="color: var(--text-secondary); max-width: 800px; margin-top: 0.35rem;">
+          An industry-driven 2-year postgraduate program equipping aspiring software architects and computer engineers with advanced full-stack skills, cloud architecture, machine learning, and venture incubation.
+        </p>
+      </div>
 
-        // Add click event listener to the toggle button
-        menuToggle.addEventListener('click', () => {
-            // Toggle the 'active' class on the navigation links container to show/hide it
-            navLinks.classList.toggle('active');
-            // Toggle the 'active' class on the menu toggle button itself (for styling the 'X')
-            menuToggle.classList.toggle('active');
-        });
+      <!-- Faculty Leadership Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+        <!-- HOD Card -->
+        <div class="card" style="border-color: rgba(59, 130, 246, 0.4);">
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <div style="width: 50px; height: 50px; border-radius: var(--radius-md); background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: #fff;">
+              RK
+            </div>
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">Prof. Rohan Kokate</h3>
+              <div style="font-size: 0.82rem; color: var(--accent-blue); font-weight: 600;">HOD & Associate Professor (MCA)</div>
+            </div>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
+            <strong>Qualification:</strong> M.C.A., Ph.D. (Pursuing)<br>
+            <strong>Experience:</strong> 15+ Years in Academic & Software Engineering<br>
+            <strong>Specialization:</strong> Cloud Architecture, Database Systems, Full-Stack Web Technologies.<br>
+            <strong>Email:</strong> rohan.kokate@jdcoem.ac.in
+          </p>
+        </div>
 
-        // Add triple click handler
-        const sahilName = document.querySelector('.team-card:first-child .member-name');
-        const imageModal = document.getElementById('imageModal');
-        const modalClose = document.querySelector('.modal-close');
+        <!-- Project Coordinator Card -->
+        <div class="card" style="border-color: rgba(139, 92, 246, 0.4);">
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <div style="width: 50px; height: 50px; border-radius: var(--radius-md); background: linear-gradient(135deg, #8b5cf6, #ec4899); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: #fff;">
+              CP
+            </div>
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">Prof. Chetan Padole</h3>
+              <div style="font-size: 0.82rem; color: var(--accent-purple); font-weight: 600;">Project Coordinator & TBI Mentor</div>
+            </div>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
+            <strong>Qualification:</strong> M.C.A., M.Tech (CSE)<br>
+            <strong>Experience:</strong> 11+ Years in Software Mentorship<br>
+            <strong>Specialization:</strong> Machine Learning, Python Ecosystem, Mobile Application Development.<br>
+            <strong>Email:</strong> chetan.padole@jdcoem.ac.in
+          </p>
+        </div>
 
-        let clickCount = 0;
-        let lastClickTime = 0;
+        <!-- Core Faculty -->
+        <div class="card">
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <div style="width: 50px; height: 50px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: #fff;">
+              SS
+            </div>
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">Prof. Sneha Sahare</h3>
+              <div style="font-size: 0.82rem; color: var(--text-highlight); font-weight: 600;">Assistant Professor (MCA)</div>
+            </div>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
+            <strong>Qualification:</strong> M.C.A. (8+ yrs exp)<br>
+            <strong>Specialization:</strong> Software Engineering, Java Systems, Cyber Security & Quality Assurance.<br>
+            <strong>Email:</strong> sneha.sahare@jdcoem.ac.in
+          </p>
+        </div>
+      </div>
+    </div>
 
-        sahilName.addEventListener('click', (e) => {
-            const currentTime = new Date().getTime();
-            
-            if (currentTime - lastClickTime > 500) {
-                clickCount = 1;
-            } else {
-                clickCount++;
-            }
+    <!-- Campus Infrastructure Highlights -->
+    <div>
+      <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 1.5rem; letter-spacing: -0.02em;">
+        Key Campus Infrastructure
+      </h2>
 
-            lastClickTime = currentTime;
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+        <div class="card">
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem;">Technology Business Incubator (TBI)</h3>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
+            Dedicated on-campus startup incubator fostering student IT software ventures, prototype development, intellectual property patent filing, and seed capital mentorship.
+          </p>
+        </div>
 
-            if (clickCount === 3) {
-                imageModal.classList.add('show');
-                clickCount = 0;
-            }
-        });
+        <div class="card">
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem;">Central Digital Library</h3>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
+            30,000+ technical volumes, national/international print journals, IEEE Xplore, DELNET, and air-conditioned reading rooms open 8:00 AM to 7:00 PM.
+          </p>
+        </div>
 
-        modalClose.addEventListener('click', () => {
-            imageModal.classList.remove('show');
-        });
+        <div class="card">
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem;">Fleet Bus Transportation</h3>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
+            Over 20 GPS-enabled college buses covering Nagpur city routes including Sitabuldi, Dharampeth, Sadar, Wardha Road, Trimurti Nagar, Wadi, Katol, and Kalmeshwar.
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
 
-        imageModal.addEventListener('click', (e) => {
-            if (e.target === imageModal) {
-                imageModal.classList.remove('show');
-            }
-        });
-    </script>
-    <!-- Include the authentication script (likely handles login status and updates nav links) -->
-    <script src="auth.js"></script>
-    <script src="audio.js" defer></script>
+  <!-- Footer -->
+  <footer class="campusiq-footer">
+    <div class="footer-container">
+      <div class="footer-line footer-line-primary">
+        <span class="footer-highlight">CampusIQ™</span> | Intelligent College Companion
+      </div>
+      <div class="footer-line footer-line-project">
+        MCA Final-Year Academic Project
+      </div>
+      <div class="footer-line footer-line-author">
+        Created & Developed by <strong class="footer-highlight">Shilpa Tayade</strong>
+      </div>
+      <div class="footer-line footer-line-institution">
+        JD College of Engineering and Management (JDCOEM), Nagpur
+      </div>
+      <div class="footer-line footer-line-code">
+        DTE Code: 04138
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
 </body>
 </html>

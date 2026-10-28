@@ -1,262 +1,281 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"> <!-- Specifies the character encoding for the document -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Configures the viewport for responsive design -->
-    <title>Admin - View Signup Data</title> <!-- Sets the title of the page -->
-    <!-- Link to Tailwind CSS CDN for utility classes -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <!-- Link to Google Fonts for the 'Montserrat' font family -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* CSS Variables for consistent styling */
-        :root {
-            --accent-green: #00d9a6; /* Accent green color */
-            --accent-blue: #00a2ff; /* Accent blue color */
-            --dark-bg: #0a0a0a; /* Dark background color */
-            --card-bg: #111111; /* Background color for cards/tables */
-            --text-light: #f5f5f5; /* Light text color */
-            --text-secondary: #aaaaaa; /* Secondary text color */
-        }
-        /* Body styling */
-        body {
-            font-family: 'Montserrat', sans-serif; /* Set default font */
-            background-color: var(--dark-bg); /* Apply dark background */
-            color: var(--text-light); /* Set default text color */
-            padding: 2rem; /* Add padding around the content */
-        }
-        /* Table styling */
-        table {
-            width: 100%; /* Full width */
-            border-collapse: collapse; /* Collapse borders into a single line */
-            margin-top: 1.5rem; /* Top margin */
-            background-color: var(--card-bg); /* Card background color */
-            border: 1px solid #222; /* Subtle border */
-            border-radius: 8px; /* Rounded corners */
-            overflow: hidden; /* Ensure content respects border radius */
-        }
-        /* Table header and data cell styling */
-        th, td {
-            border: 1px solid #222; /* Cell borders */
-            padding: 12px 15px; /* Cell padding */
-            text-align: left; /* Align text to the left */
-        }
-        /* Table header specific styling */
-        th {
-            background-color: #222; /* Darker background for header */
-            color: var(--accent-green); /* Accent green text color */
-            font-weight: 600; /* Semi-bold font weight */
-        }
-        /* Table data cell specific styling */
-        td {
-            color: var(--text-light); /* Light text color */
-        }
-        /* Alternating row background color for readability */
-        tr:nth-child(even) {
-            background-color: rgba(255, 255, 255, 0.03); /* Slightly lighter background for even rows */
-        }
-        /* Gradient button styling */
-        .gradient-btn {
-            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); /* Gradient background */
-            transition: all 0.3s ease; /* Smooth transition for hover effects */
-            padding: 10px 20px; /* Padding */
-            border-radius: 5px; /* Rounded corners */
-            color: var(--dark-bg); /* Dark text color for contrast */
-            font-weight: 600; /* Semi-bold font weight */
-            cursor: pointer; /* Pointer cursor on hover */
-            border: none; /* Remove default border */
-            margin-top: 1.5rem; /* Top margin */
-        }
-        /* Gradient button hover effects */
-        .gradient-btn:hover {
-            opacity: 0.9; /* Slightly transparent on hover */
-            transform: translateY(-1px); /* Slight lift effect */
-            box-shadow: 0 4px 12px rgba(0, 217, 166, 0.3); /* Subtle glow effect */
-        }
-        /* Header title styling with gradient text */
-        .header-title {
-             background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); /* Gradient background */
-            -webkit-background-clip: text; /* Clip background to text (for WebKit browsers) */
-            background-clip: text; /* Clip background to text */
-            -webkit-text-fill-color: transparent; /* Make text transparent to show gradient */
-            font-weight: 700; /* Bold font weight */
-            font-size: 1.5rem; /* Font size */
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — CampusIQ | JDCOEM Nagpur</title>
+  <meta name="description" content="Administrative control dashboard for CampusIQ at JD College of Engineering & Management.">
+  <link rel="stylesheet" href="assets/css/campusiq.css">
+  <link rel="icon" type="image/png" href="images/favicon.png" onerror="this.href='images/icon.png'">
 </head>
 <body>
-    <!-- Main heading with gradient text -->
-    <h1 class="header-title">Signed Up User Data (from Local Storage)</h1>
-    <!-- Subtitle/Note -->
-    <p class="text-sm text-red-500 mt-2"> Dear teacher what you think about it ?.</p> <!-- Note: This text might need review -->
+  <div class="ambient-bg"></div>
+  <div class="ambient-grid"></div>
 
-    <!-- Button to download user data as CSV -->
-    <button id="downloadCsvBtn" class="gradient-btn">Download as CSV</button>
+  <!-- Header -->
+  <header class="campusiq-nav">
+    <a href="index.html" class="nav-brand">
+      <div class="brand-emblem">JD</div>
+      <div class="brand-title">
+        <span class="brand-title-main">CampusIQ Console</span>
+        <span class="brand-title-sub">JDCOEM Nagpur • Administrator Portal</span>
+      </div>
+    </a>
+    <nav>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="bot.html" class="nav-link">CampusIQ Bot</a></li>
+        <li><a href="admin_view.html" class="nav-link active">Admin Dashboard</a></li>
+      </ul>
+    </nav>
+    <div class="nav-actions" id="nav-auth-container">
+      <!-- Injected by auth.js -->
+    </div>
+  </header>
 
-    <!-- Container for the user data table -->
-    <div id="userDataContainer">
-        <!-- Initial message shown while loading or if no data -->
-        <p class="mt-4 text-gray-400">Loading user data...</p>
-        <!-- Table to display user data (initially hidden) -->
-        <table id="userTable" class="hidden">
-            <thead>
-                <tr>
-                    <th>Full Name</th>
-                    <th>Email</th>
-                    <th>Password (Insecure)</th> <!-- Warning: Displaying passwords is a security risk -->
-                </tr>
-            </thead>
-            <tbody id="userTableBody">
-                <!-- User data rows will be populated here by JavaScript -->
-            </tbody>
-        </table>
+  <main style="max-width: 1240px; margin: 2rem auto 5rem; padding: 0 1.5rem;">
+    <!-- Dashboard Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <span class="badge badge-naac">Super Administrator</span>
+          <span class="badge badge-autonomous">Database Connected</span>
+        </div>
+        <h1 style="font-size: 2.2rem; font-weight: 800; letter-spacing: -0.02em;">System Dashboard</h1>
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+          Real-time metrics, user management, and security audit logs for JDCOEM CampusIQ.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem;">
+        <button id="btn-export-csv" class="btn btn-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Users (CSV)
+        </button>
+      </div>
     </div>
 
-    <script>
-        // Get references to DOM elements
-        const userDataContainer = document.getElementById('userDataContainer');
-        const userTable = document.getElementById('userTable');
-        const userTableBody = document.getElementById('userTableBody');
-        const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+    <!-- Metrics Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem;">
+      <div class="card">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Users</div>
+        <div id="stat-total-users" style="font-size: 2.2rem; font-weight: 800; color: #fff; margin: 0.25rem 0;">--</div>
+        <div style="font-size: 0.78rem; color: var(--status-success);">Active Accounts</div>
+      </div>
+      <div class="card">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Student Accounts</div>
+        <div id="stat-students" style="font-size: 2.2rem; font-weight: 800; color: var(--accent-blue); margin: 0.25rem 0;">--</div>
+        <div style="font-size: 0.78rem; color: var(--text-muted);">Enrolled & Prospective</div>
+      </div>
+      <div class="card">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Inquiries</div>
+        <div id="stat-messages" style="font-size: 2.2rem; font-weight: 800; color: var(--accent-purple); margin: 0.25rem 0;">--</div>
+        <div style="font-size: 0.78rem; color: var(--text-muted);">Message Turns Logged</div>
+      </div>
+      <div class="card">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Chat Sessions</div>
+        <div id="stat-conversations" style="font-size: 2.2rem; font-weight: 800; color: var(--accent-orange); margin: 0.25rem 0;">--</div>
+        <div style="font-size: 0.78rem; color: var(--text-muted);">Unique Sessions</div>
+      </div>
+    </div>
 
-        /**
-         * Fetches user data from local storage and displays it in the table.
-         */
-        function displayUserData() {
-            // Retrieve user data string from local storage
-            const usersJson = localStorage.getItem('users');
-            // Parse the JSON string into an array, or use an empty array if no data exists
-            const users = usersJson ? JSON.parse(usersJson) : [];
+    <!-- Registered Users Management -->
+    <div class="card" style="margin-bottom: 2.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.3rem; font-weight: 700; color: #fff;">Registered User Registry</h2>
+          <p style="font-size: 0.82rem; color: var(--text-muted);">Database records stored with Argon2id salted password hashing.</p>
+        </div>
+        <input 
+          type="text" 
+          id="search-users" 
+          class="form-control" 
+          placeholder="Filter by name or email..." 
+          style="max-width: 280px; padding: 0.5rem 0.85rem; font-size: 0.85rem;"
+        />
+      </div>
 
-            // Clear previous status message (e.g., "Loading...")
-            const loadingP = userDataContainer.querySelector('p');
-            if (loadingP) loadingP.remove(); // Remove the paragraph element if it exists
+      <div class="table-responsive">
+        <table class="campusiq-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Full Name</th>
+              <th>Email Address</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Joined Date</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body">
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading registered users...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-            // Clear any existing rows in the table body
-            userTableBody.innerHTML = '';
+    <!-- Security Audit Logs -->
+    <div class="card">
+      <div style="margin-bottom: 1.25rem;">
+        <h2 style="font-size: 1.3rem; font-weight: 700; color: #fff;">Security Audit Logs</h2>
+        <p style="font-size: 0.82rem; color: var(--text-muted);">Immutable audit trail tracking logins, role changes, and data modifications.</p>
+      </div>
 
-            // Check if there are any users
-            if (users.length === 0) {
-                // If no users, display a message in the table
-                const noDataRow = document.createElement('tr');
-                const cell = document.createElement('td');
-                cell.colSpan = 3; // Span across all columns
-                cell.textContent = 'No user data found in local storage.';
-                cell.classList.add('text-center', 'text-gray-500', 'py-4'); // Add styling
-                noDataRow.appendChild(cell);
-                userTableBody.appendChild(noDataRow);
-                // Disable the download button if there's no data
-                downloadCsvBtn.disabled = true;
-                downloadCsvBtn.style.opacity = '0.5';
-                downloadCsvBtn.style.cursor = 'not-allowed';
-            } else {
-                // If users exist, iterate through them and create table rows
-                users.forEach(user => {
-                    const row = document.createElement('tr');
+      <div class="table-responsive">
+        <table class="campusiq-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>User</th>
+              <th>Action</th>
+              <th>Entity</th>
+              <th>IP Address</th>
+            </tr>
+          </thead>
+          <tbody id="audit-table-body">
+            <tr>
+              <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading audit trail...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
 
-                    // Create cell for Full Name
-                    const nameCell = document.createElement('td');
-                    nameCell.textContent = user.fullName || ''; // Use textContent for safety against XSS
-                    row.appendChild(nameCell);
+  <!-- Footer -->
+  <footer class="campusiq-footer">
+    <div class="footer-container">
+      <div class="footer-line footer-line-primary">
+        <span class="footer-highlight">CampusIQ™</span> | Intelligent College Companion
+      </div>
+      <div class="footer-line footer-line-project">
+        MCA Final-Year Academic Project
+      </div>
+      <div class="footer-line footer-line-author">
+        Created & Developed by <strong class="footer-highlight">Shilpa Tayade</strong>
+      </div>
+      <div class="footer-line footer-line-institution">
+        JD College of Engineering and Management (JDCOEM), Nagpur
+      </div>
+      <div class="footer-line footer-line-code">
+        DTE Code: 04138
+      </div>
+    </div>
+  </footer>
 
-                    // Create cell for Email
-                    const emailCell = document.createElement('td');
-                    emailCell.textContent = user.email || ''; // Use textContent for safety
-                    row.appendChild(emailCell);
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script>
+    let allUsers = [];
 
-                    // Create cell for Password (Security Warning: Displaying passwords is bad practice)
-                    const passwordCell = document.createElement('td');
-                    passwordCell.textContent = user.password || ''; // Use textContent for safety
-                    passwordCell.classList.add('text-red-400'); // Style password differently (e.g., red)
-                    row.appendChild(passwordCell);
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Guard route: Requires Admin Role
+      await window.auth.requireAdmin();
 
-                    // Add the completed row to the table body
-                    userTableBody.appendChild(row);
-                });
-                // Enable the download button as there is data
-                downloadCsvBtn.disabled = false;
-                downloadCsvBtn.style.opacity = '1';
-                downloadCsvBtn.style.cursor = 'pointer';
-            }
-            // Make the table visible
-            userTable.classList.remove('hidden');
+      loadDashboardMetrics();
+      loadUsers();
+      loadAuditLogs();
+
+      // Search filter
+      const searchInput = document.getElementById('search-users');
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        const filtered = allUsers.filter(u => 
+          u.full_name.toLowerCase().includes(query) || 
+          u.email.toLowerCase().includes(query)
+        );
+        renderUsers(filtered);
+      });
+
+      // CSV Export
+      const exportBtn = document.getElementById('btn-export-csv');
+      exportBtn.addEventListener('click', async () => {
+        try {
+          const res = await fetch(`${window.api.baseUrl}/admin/export/users`, {
+            credentials: 'include'
+          });
+          if (res.ok) {
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `campusiq_users_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.showToast('CSV export downloaded successfully', 'success');
+          } else {
+            window.showToast('CSV export failed. Ensure admin session is active.', 'error');
+          }
+        } catch (e) {
+          window.showToast('Error exporting CSV: ' + e.message, 'error');
         }
+      });
+    });
 
-        // Note: The problematic escapeHtml function was removed as textContent provides basic XSS protection here.
+    async function loadDashboardMetrics() {
+      const res = await window.api.get('/admin/dashboard');
+      if (res.success && res.data) {
+        document.getElementById('stat-total-users').textContent = res.data.total_users;
+        document.getElementById('stat-students').textContent = res.data.student_users;
+        document.getElementById('stat-messages').textContent = res.data.total_messages;
+        document.getElementById('stat-conversations').textContent = res.data.total_conversations;
+      }
+    }
 
-        /**
-         * Generates a CSV file from the user data and initiates download.
-         */
-        function downloadCsv() {
-            // Retrieve user data from local storage
-            const usersJson = localStorage.getItem('users');
-            const users = usersJson ? JSON.parse(usersJson) : [];
+    async function loadUsers() {
+      const res = await window.api.get('/admin/users');
+      if (res.success && Array.isArray(res.data)) {
+        allUsers = res.data;
+        renderUsers(allUsers);
+      }
+    }
 
-            // Check if there is data to download
-            if (users.length === 0) {
-                alert('No data to download.');
-                return; // Exit function if no data
-            }
+    function renderUsers(users) {
+      const tbody = document.getElementById('users-table-body');
+      if (users.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No user records found.</td></tr>`;
+        return;
+      }
 
-            // Define CSV headers
-            const headers = ['Full Name', 'Email', 'Password'];
-            // Map user data to CSV rows, escaping fields appropriately
-            const rows = users.map(user => [
-                `"${escapeCsvField(user.fullName)}"`, // Enclose in quotes and escape internal quotes
-                `"${escapeCsvField(user.email)}"`,
-                `"${escapeCsvField(user.password)}"` // Include password (still insecure)
-            ]);
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td><span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">#${u.id}</span></td>
+          <td style="font-weight: 600; color: #fff;">${escapeHtml(u.full_name)}</td>
+          <td>${escapeHtml(u.email)}</td>
+          <td><span class="badge ${u.role === 'admin' ? 'badge-naac' : 'badge-mca'}">${u.role}</span></td>
+          <td><span style="color: ${u.is_active ? '#34d399' : '#f87171'};">● ${u.is_active ? 'Active' : 'Disabled'}</span></td>
+          <td style="font-size: 0.8rem; color: var(--text-muted);">${new Date(u.created_at).toLocaleDateString()}</td>
+        </tr>
+      `).join('');
+    }
 
-            // Combine headers and rows into a single CSV string
-            const csvContent = [
-                headers.join(','), // Join headers with commas
-                ...rows.map(row => row.join(',')) // Join each row's fields with commas
-            ].join('\n'); // Join all lines with newline characters
+    async function loadAuditLogs() {
+      const res = await window.api.get('/admin/audit-logs');
+      const tbody = document.getElementById('audit-table-body');
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        tbody.innerHTML = res.data.map(log => `
+          <tr>
+            <td style="font-size: 0.78rem; font-family: var(--font-mono);">${new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
+            <td style="color: #fff;">${log.user_email || 'System'}</td>
+            <td><span class="badge badge-autonomous" style="font-size: 0.7rem;">${escapeHtml(log.action)}</span></td>
+            <td style="color: var(--text-secondary);">${escapeHtml(log.entity_name || 'N/A')}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.78rem;">${escapeHtml(log.ip_address || '127.0.0.1')}</td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No recent audit activity.</td></tr>`;
+      }
+    }
 
-            // Create a Blob (Binary Large Object) containing the CSV data
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            // Create a temporary anchor element for downloading
-            const link = document.createElement('a');
-
-            // Check if the browser supports the download attribute
-            if (link.download !== undefined) {
-                // Create a URL for the Blob
-                const url = URL.createObjectURL(blob);
-                // Set the download attributes for the anchor element
-                link.setAttribute('href', url);
-                link.setAttribute('download', 'signed_up_users.csv'); // Set the filename
-                link.style.visibility = 'hidden'; // Hide the link
-                // Append the link to the body, click it, and then remove it
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                // Release the object URL to free up memory
-                URL.revokeObjectURL(url);
-            } else {
-                // Fallback for browsers that don't support the download attribute
-                alert('CSV download is not supported in your browser.');
-            }
-        }
-
-        /**
-         * Escapes characters within a CSV field that could cause issues (e.g., double quotes).
-         * @param {any} field - The data to be placed in a CSV field.
-         * @returns {string} - The escaped string suitable for a CSV field.
-         */
-        function escapeCsvField(field) {
-            // Ensure the field is treated as a string, handle null/undefined
-            const stringField = String(field || '');
-            // Escape double quotes by replacing them with two double quotes
-            return stringField.replace(/"/g, '""');
-        }
-
-
-        // Initial call to display data when the page loads
-        displayUserData();
-
-        // Add event listener to the download button to trigger the downloadCsv function on click
-        downloadCsvBtn.addEventListener('click', downloadCsv);
-
-    </script>
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      })[m]);
+    }
+  </script>
 </body>
 </html>

@@ -1,948 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>College Companion</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary-bg: #0a0a0a;
-            --accent-1: #00ff9d;
-            --accent-2: #0095ff;
-            --text-primary: #f0f0f0;
-            --text-secondary: #888;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--primary-bg);
-            color: var(--text-primary);
-            overflow-x: hidden;
-        }
-
-        .cyber-header {
-            padding: 1.5rem 5%;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 100;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--accent-1);
-        }
-
-        .nav-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .nav-links a {
-            color: var(--text-primary);
-            text-decoration: none;
-            margin-left: 2rem;
-            position: relative;
-            transition: color 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--accent-1);
-        }
-
-        .robot-container {
-            background: radial-gradient(circle at center, #001a1a 0%, #000 100%); 
-            height: 90vh;
-            margin-top: 80px;
-            position: relative;
-            overflow: hidden;
-            flex: 1;
-        }
-
-        .content-section {
-            padding: 4rem 5%;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .content-center {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: calc(100vh - 80px);
-        }
-
-        .cyber-title {
-            font-size: 2.5rem;
-            margin-bottom: 2rem;
-            background: linear-gradient(45deg, var(--accent-1), var(--accent-2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-            width: 100%;
-        }
-
-        .feature-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border: 1px solid var(--accent-1);
-            transition: transform 0.3s ease;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .cyber-button {
-            background: linear-gradient(145deg, var(--accent-1), var(--accent-2));
-            color: var(--primary-bg);
-            border: none;
-            padding: 0.8rem 1.5rem;
-            font-size: 0.9rem;
-            cursor: pointer;
-            border-radius: 25px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.4s ease;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 700;
-            box-shadow: 0 0 25px var(--accent-1);
-            text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
-            transform: scale(0.8);
-        }
-
-        .cyber-button::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                45deg,
-                transparent,
-                var(--accent-1),
-                transparent
-            );
-            animation: borderFlow 3s linear infinite;
-            transform: rotate(45deg);
-        }
-
-        .cyber-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 40px var(--accent-1),
-                        0 0 60px var(--accent-2);
-        }
-
-        .cyber-button span {
-            position: relative;
-            z-index: 2;
-        }
-
-        @keyframes borderFlow {
-            0% { transform: rotate(45deg) translateX(-100%); }
-            100% { transform: rotate(45deg) translateX(100%); }
-        }
-
-        .cyber-button::after {
-            content: '';
-            position: absolute;
-            inset: 2px;
-            background: linear-gradient(145deg, 
-                rgba(0, 255, 157, 0.8), 
-                rgba(0, 149, 255, 0.8));
-            border-radius: 50px;
-            z-index: 1;
-        }
-
-        @keyframes pulse-glow {
-            0% { box-shadow: 0 0 15px var(--accent-1); }
-            50% { box-shadow: 0 0 30px var(--accent-1); }
-            100% { box-shadow: 0 0 15px var(--accent-1); }
-        }
-
-        .cyber-button {
-            animation: pulse-glow 2s infinite;
-        }
-
-        /* Add click animation */
-        .cyber-button:active {
-            animation: clickEffect 0.5s ease forwards;
-        }
-
-        @keyframes clickEffect {
-            0% { transform: scale(1); }
-            50% { transform: scale(0.8); }
-            100% { 
-                transform: scale(1);
-                box-shadow: 0 0 40px var(--accent-1);
-            }
-        }
-
-        /* Add page transition */
-        .page-transition {
-            animation: pageTransition 1s ease forwards;
-        }
-
-        @keyframes pageTransition {
-            0% { opacity: 1; }
-            100% { opacity: 0; transform: scale(1.2); }
-        }
-
-        .title-spacing {
-            margin-top: 3rem;
-            padding-top: 2rem;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .project-text {
-            font-weight: normal;
-        }
-        .team-name {
-            font-weight: 700;
-            font-size: 1.2em;
-        }
-
-        .team-container {
-            text-align: center;
-            padding: 1rem;
-            background: linear-gradient(
-                135deg,
-                rgba(0, 255, 157, 0.1),
-                rgba(0, 149, 255, 0.1)
-            );
-            border-radius: 15px;
-            backdrop-filter: blur(5px);
-            box-shadow: 
-                0 0 30px rgba(0, 255, 157, 0.1),
-                inset 0 0 20px rgba(0, 149, 255, 0.1);
-        }
-
-        .team-title {
-            margin-bottom: 1rem;
-            position: relative;
-            padding: 0.5rem;
-            border-bottom: 2px solid rgba(0, 255, 157, 0.2);
-        }
-
-        .glitch-text {
-            color: var(--text-secondary);
-            font-size: 1.4rem;
-            letter-spacing: 3px;
-            animation: glitchText 3s infinite linear alternate-reverse;
-            font-weight: 600;
-            text-transform: uppercase;
-            background: linear-gradient(45deg, var(--accent-1), var(--accent-2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .glitch-text::before,
-        .glitch-text::after {
-            content: attr(data-text);
-            position: absolute;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .glitch-text::before {
-            left: 2px;
-            text-shadow: -2px 0 var(--accent-1);
-            clip: rect(24px, 550px, 90px, 0);
-            animation: glitch-anim 3s infinite linear alternate-reverse;
-        }
-
-        .glitch-text::after {
-            left: -2px;
-            text-shadow: -2px 0 var(--accent-2);
-            clip: rect(85px, 550px, 140px, 0);
-            animation: glitch-anim 2s infinite linear alternate-reverse;
-        }
-
-        @keyframes glitch-anim {
-            0% { clip: rect(42px, 9999px, 44px, 0); }
-            20% { clip: rect(12px, 9999px, 59px, 0); }
-            40% { clip: rect(96px, 9999px, 61px, 0); }
-            60% { clip: rect(24px, 9999px, 25px, 0); }
-            80% { clip: rect(58px, 9999px, 73px, 0); }
-            100% { clip: rect(86px, 9999px, 73px, 0); }
-        }
-
-        .team-name-container {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background: linear-gradient(
-                90deg,
-                transparent,
-                rgba(0, 255, 157, 0.05),
-                transparent
-            );
-        }
-
-        .team-name-text {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(45deg, var(--accent-1), var(--accent-2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 10px var(--accent-1);
-            animation: floatText 2s ease-in-out infinite;
-            position: relative;
-        }
-
-        .team-name-text:nth-child(1) { animation-delay: 0s; }
-        .team-name-text:nth-child(2) { animation-delay: 0.2s; }
-        .team-name-text:nth-child(3) { animation-delay: 0.4s; }
-        .team-name-text:nth-child(4) { animation-delay: 0.6s; }
-        .team-name-text:nth-child(5) { animation-delay: 0.8s; }
-
-        .team-name-text::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.3s ease;
-        }
-
-        .team-name-text:hover::after {
-            transform: scaleX(1);
-        }
-
-        @keyframes floatText {
-            0%, 100% { 
-                transform: translateY(0);
-                text-shadow: 0 0 10px var(--accent-1);
-            }
-            50% { 
-                transform: translateY(-10px);
-                text-shadow: 0 0 20px var(--accent-2);
-            }
-        }
-
-        .terminal-container {
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 10px;
-            border: 1px solid var(--accent-1);
-            overflow: hidden;
-            margin: 2rem auto;
-            width: 90%;
-            max-width: 600px;
-            box-shadow: 0 0 30px rgba(0, 255, 157, 0.1);
-        }
-
-        .terminal-header {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 0.5rem;
-            display: flex;
-            gap: 0.5rem;
-            border-bottom: 1px solid var(--accent-2);
-        }
-
-        .terminal-circle {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--accent-1);
-            opacity: 0.8;
-        }
-
-        .terminal-circle:nth-child(2) {
-            background: var(--accent-2);
-        }
-
-        .terminal-circle:nth-child(3) {
-            background: #ff3e3e;
-        }
-
-        .terminal-body {
-            padding: 1.5rem;
-        }
-
-        .terminal-text {
-            font-family: monospace;
-            font-size: 1.2rem;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .terminal-prompt {
-            color: var(--accent-1);
-        }
-
-        .typing-text::before {
-            content: '';
-            animation: typing 8s steps(40) infinite;
-        }
-
-        @keyframes typing {
-            0% { content: ''; }
-            5% { content: 'I'; }
-            10% { content: 'In'; }
-            15% { content: 'Ini'; }
-            20% { content: 'Init'; }
-            25% { content: 'Initi'; }
-            30% { content: 'Initia'; }
-            35% { content: 'Initial'; }
-            40% { content: 'Initiali'; }
-            45% { content: 'Initializ'; }
-            50% { content: 'Initializi'; }
-            55% { content: 'Initializing'; }
-            60% { content: 'Initializing.'; }
-            65% { content: 'Initializing..'; }
-            70% { content: 'Initializing...'; }
-            75% { content: 'Project by MASSS'; }
-            100% { content: 'Project by MASSS'; }
-        }
-
-        .cursor {
-            color: var(--accent-1);
-            animation: blink 1s step-end infinite;
-        }
-
-        .chat-button-container {
-            position: absolute;
-            top: 48%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .chat-button-container.visible {
-            visibility: visible;
-            animation: buttonAppear 1s ease-out forwards;
-        }
-
-        @keyframes buttonAppear {
-            0% {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(0.5);
-                filter: blur(10px);
-            }
-            50% {
-                opacity: 0.5;
-                transform: translate(-50%, -50%) scale(1.2);
-                filter: blur(5px);
-            }
-            75% {
-                transform: translate(-50%, -50%) scale(0.9);
-                filter: blur(0px);
-            }
-            100% {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
-                filter: blur(0px);
-            }
-        }
-
-        .chat-button-container.visible .glass-button {
-            animation: glowPulse 2s infinite ease-in-out;
-        }
-
-        @keyframes glowPulse {
-            0%, 100% {
-                box-shadow: 0 0 15px rgba(0, 255, 157, 0.3);
-            }
-            50% {
-                box-shadow: 0 0 30px rgba(0, 255, 157, 0.6),
-                            0 0 50px rgba(0, 149, 255, 0.4);
-            }
-        }
-
-        .glass-button {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 0.6rem 1.2rem;
-            font-size: 0.8rem;
-            color: var(--text-primary);
-            border-radius: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease, box-shadow 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
-            transform: scale(0.9);
-            animation: buttonPulse 2s infinite 5.5s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        @keyframes buttonPulse {
-            0%, 100% { transform: scale(0.95); }
-            50% { transform: scale(1); }
-        }
-
-        .glass-button:active::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 300%;
-            height: 300%;
-            background: radial-gradient(circle, 
-                rgba(0,255,157,0.4) 0%, 
-                rgba(0,149,255,0.3) 50%, 
-                transparent 100%
-            );
-            transform: translate(-50%, -50%);
-            animation: clickRipple 0.8s ease-out;
-            z-index: -1;
-        }
-
-        @keyframes clickRipple {
-            0% {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(0);
-            }
-            100% {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(2);
-            }
-        }
-
-        .glass-button.clicking {
-            animation: buttonClick 0.8s ease-out;
-        }
-
-        .glass-button::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, 
-                rgba(0, 255, 157, 0.6) 0%,
-                rgba(0, 149, 255, 0.4) 30%,
-                transparent 70%
-            );
-            transform: translate(-50%, -50%) scale(0);
-            opacity: 0;
-            transition: transform 0.5s ease-out, opacity 0.5s ease-out;
-            pointer-events: none;
-        }
-
-        .glass-button.clicking::after {
-            animation: lightningEffect 0.8s ease-out;
-        }
-
-        @keyframes lightningEffect {
-            0% {
-                transform: translate(-50%, -50%) scale(0);
-                opacity: 0;
-            }
-            10% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 1;
-            }
-            100% {
-                transform: translate(-50%, -50%) scale(2);
-                opacity: 0;
-            }
-        }
-
-        /* Add scroll animations */
-        .fade-in {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.8s ease-out;
-        }
-
-        .fade-in.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .slide-in-left {
-            opacity: 0;
-            transform: translateX(-100px);
-            transition: all 0.8s ease-out;
-        }
-
-        .slide-in-right {
-            opacity: 0;
-            transform: translateX(100px);
-            transition: all 0.8s ease-out;
-        }
-
-        .slide-in-left.visible,
-        .slide-in-right.visible {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .scale-in {
-            opacity: 0;
-            transform: scale(0.95);
-            transition: all 0.8s ease-out;
-        }
-
-        .scale-in.visible {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        /* Add smooth scroll behavior */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-            .content-center {
-                flex-direction: column;
-                padding: 1rem;
-            }
-
-            .cyber-title {
-                font-size: 2rem;
-            }
-
-            .robot-container {
-                height: 60vh;
-                margin-top: 40px;
-            }
-
-            .terminal-container {
-                width: 95%;
-            }
-        }
-
-        .menu-toggle {
-            display: none;
-            flex-direction: column;
-            gap: 6px;
-            padding: 5px;
-            z-index: 101;
-            cursor: pointer;
-        }
-
-        .menu-toggle .bar {
-            width: 25px;
-            height: 2px;
-            background: var(--text-primary);
-            transition: 0.3s;
-        }
-
-        .menu-toggle.active .bar:nth-child(1) {
-            transform: rotate(45deg) translate(6px, 6px);
-        }
-
-        .menu-toggle.active .bar:nth-child(2) {
-            opacity: 0;
-        }
-
-        .menu-toggle.active .bar:nth-child(3) {
-            transform: rotate(-45deg) translate(6px, -6px);
-        }
-
-        @media (max-width: 768px) {
-            .cyber-header {
-                padding: 1rem;
-            }
-
-            .nav-container {
-                position: relative;
-            }
-
-            .nav-links {
-                display: none;
-                position: fixed;
-                top: 80px;
-                left: 0;
-                width: 100%;
-                background: rgba(10, 10, 10, 0.95);
-                padding: 1rem;
-                flex-direction: column;
-                align-items: center;
-                backdrop-filter: blur(10px);
-                border-bottom: 1px solid var(--accent-1);
-                z-index: 100;
-            }
-
-            .nav-links.active {
-                display: flex;
-            }
-
-            .nav-links a {
-                margin: 1rem 0;
-                font-size: 1.1rem;
-                width: 100%;
-                text-align: center;
-                padding: 0.5rem;
-            }
-
-            .menu-toggle {
-                display: flex;
-            }
-
-            .cyber-title {
-                font-size: 1.8rem;
-            }
-
-            .robot-container {
-                height: 50vh;
-            }
-
-            .glass-button {
-                transform: scale(0.8);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .cyber-title {
-                font-size: 1.5rem;
-            }
-
-            .terminal-container {
-                padding: 1rem;
-            }
-
-            .terminal-text {
-                font-size: 1rem;
-            }
-
-            .robot-container {
-                height: 40vh;
-            }
-        }
-
-        .animated-text-container {
-            height: 50px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 2rem 0;
-        }
-
-        .text-sequence {
-            font-size: 1.5rem;
-            color: var(--text-primary);
-            position: relative;
-            text-align: center;
-        }
-
-        .text-sequence::after {
-            content: '';
-            width: 2px;
-            height: 20px;
-            background: var(--accent-1);
-            position: absolute;
-            right: -10px;
-            top: 50%;
-            transform: translateY(-50%);
-            animation: blink 0.7s infinite;
-        }
-
-        @keyframes fadeInOut {
-            0%, 100% { opacity: 0; transform: translateY(10px); }
-            20%, 80% { opacity: 1; transform: translateY(0); }
-        }
-    </style>
-    <!-- Update script source paths to be relative -->
-    <script src="./auth.js"></script>
-    <script src="./js/audioUtils.js"></script>
-    <script src="./js/script.js"></script>
-    <script src="./audio.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusIQ — JD College of Engineering & Management (JDCOEM) | MCA Companion</title>
+  <meta name="description" content="CampusIQ: Intelligent College Companion for JD College of Engineering & Management (JDCOEM), Nagpur. Authoritative inquiry assistant for the Master of Computer Applications (MCA) department.">
+  <link rel="stylesheet" href="assets/css/campusiq.css">
+  <link rel="icon" type="image/png" href="images/favicon.png" onerror="this.href='images/icon.png'">
+  <!-- Spline Viewer Component -->
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.72/build/spline-viewer.js"></script>
 </head>
 <body>
-    <header class="cyber-header">
-        <nav class="nav-container">
-            <h1>College <span style="color: var(--accent-1);">Companion</span></h1>
-            <div class="nav-links">
-                <!-- Links will be populated by auth.js -->
-            </div>
-            <div class="menu-toggle">
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-            </div>
-        </nav>
-    </header>
+  <div class="ambient-bg"></div>
+  <div class="ambient-grid"></div>
 
-    <main class="main-container">
-        <div class="content-center">
-            <section class="content-section fade-in" id="about">
-                <div class="title-spacing">
-                    <h2 class="cyber-title scale-in">I'm here now, your college companion</h2>
-                </div>
-                <div class="animated-text-container">
-                    <div class="text-sequence"></div>
-                </div>
+  <!-- Glassmorphic Header -->
+  <header class="campusiq-nav">
+    <a href="index.html" class="nav-brand">
+      <div class="brand-emblem">JD</div>
+      <div class="brand-title">
+        <span class="brand-title-main">CampusIQ</span>
+        <span class="brand-title-sub">JDCOEM Nagpur • MCA Department</span>
+      </div>
+    </a>
 
-                <div class="terminal-container slide-in-left">
-                    <div class="terminal-header">
-                        <span class="terminal-circle"></span>
-                        <span class="terminal-circle"></span>
-                        <span class="terminal-circle"></span>
-                    </div>
-                    <div class="terminal-body">
-                        <div class="terminal-text">
-                            <span class="terminal-prompt">></span>
-                            <span class="typing-text"></span>
-                            <span class="cursor">_</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
+    <nav>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link active">Home</a></li>
+        <li><a href="bot.html" class="nav-link">CampusIQ Bot</a></li>
+        <li><a href="about_us.html" class="nav-link">About JDCOEM</a></li>
+      </ul>
+    </nav>
+
+    <div class="nav-actions" id="nav-auth-container">
+      <!-- Injected dynamically by assets/js/auth.js -->
+      <a href="login.html" class="btn btn-sm btn-secondary">Sign In</a>
+      <a href="signup.html" class="btn btn-sm btn-primary">Register</a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="hero-section">
+    <div class="hero-content">
+      <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem;">
+        <span class="badge badge-naac">NAAC 'A' Grade</span>
+        <span class="badge badge-autonomous">Autonomous Institute</span>
+        <span class="badge badge-mca">DTE Code: 04138</span>
+        <span class="badge badge-mca">DBATU Affiliated</span>
+      </div>
+
+      <h1>
+        Next-Gen Inquiries with<br>
+        <span class="gradient-text">CampusIQ Intelligence</span>
+      </h1>
+
+      <p class="hero-lead">
+        Your authoritative digital companion for <strong>JD College of Engineering and Management (JDCOEM), Nagpur</strong>. Get instant, verified facts on <strong>MCA Admissions</strong>, FRA fee schedules, capstone project incubation at TBI, and campus placements.
+      </p>
+
+      <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <a href="bot.html" class="btn btn-primary" style="padding: 0.85rem 1.75rem; font-size: 1rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
+          Launch CampusIQ Assistant
+        </a>
+        <a href="about_us.html" class="btn btn-secondary" style="padding: 0.85rem 1.5rem;">
+          Explore MCA Department
+        </a>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat-item">
+          <h3>120</h3>
+          <p>MCA Intake Seats</p>
         </div>
-
-        <div class="robot-container">
-            <div class="chat-button-container">
-                <button class="glass-button" onclick="openChatbot()">Chat</button>
-            </div>
-            <iframe 
-                src='https://my.spline.design/nexbotrobotcharacterconcept-cf53a0459b69101696f650f9ff567d77/' 
-                frameborder='0' 
-                width='100%' 
-                height='100%'
-                style="mix-blend-mode: screen;"
-                title="3D Robot Animation"
-            ></iframe>
+        <div class="stat-item">
+          <h3>₹91.5K</h3>
+          <p>Annual FRA Fee</p>
         </div>
-    </main>
-    <!-- Add transition overlay -->
-    <div class="transition-overlay"></div>
+        <div class="stat-item">
+          <h3>12+ LPA</h3>
+          <p>Highest Placement CTC</p>
+        </div>
+      </div>
+    </div>
 
-    <script>
-        // Intersection Observer for scroll animations
-        const animationObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, {
-            threshold: 0.1,
-            rootMargin: '0px'
-        });
+    <!-- 3D Interactive Spline Visual -->
+    <div class="spline-container">
+      <spline-viewer url="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"></spline-viewer>
+      <div style="position: absolute; bottom: 12px; left: 16px; background: rgba(7, 10, 18, 0.75); backdrop-filter: blur(8px); padding: 0.35rem 0.75rem; border-radius: var(--radius-full); font-size: 0.75rem; color: var(--text-muted); border: 1px solid var(--border-subtle);">
+        Interactive 3D Canvas • Drag to Rotate
+      </div>
+    </div>
+  </main>
 
-        // Observe all elements with animation classes
-        document.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right, .scale-in').forEach((el) => {
-            animationObserver.observe(el);
-        });
+  <!-- Feature Grid Section -->
+  <section style="max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem 5rem;">
+    <div style="text-align: center; margin-bottom: 3rem;">
+      <h2 style="font-size: 2.2rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.75rem;">
+        Engineered for the <span class="gradient-text">MCA Department</span>
+      </h2>
+      <p style="color: var(--text-secondary); max-width: 650px; margin: 0 auto;">
+        From entrance examinations to graduation and tech venture incubation, CampusIQ answers your queries with zero hallucinations.
+      </p>
+    </div>
 
-        // Toggle navigation menu
-        document.querySelector('.menu-toggle').addEventListener('click', () => {
-            document.querySelector('.nav-links').classList.toggle('active');
-            document.querySelector('.menu-toggle').classList.toggle('active');
-        });
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+      <!-- Feature Card 1 -->
+      <div class="card">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(59, 130, 246, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-blue); margin-bottom: 1.25rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
+        </div>
+        <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff;">Curriculum & Labs</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
+          Autonomous DBATU-aligned syllabus covering Cloud Architecture, Full-Stack Web Development, AI/Machine Learning, and high-performance GPU laboratories.
+        </p>
+      </div>
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = 1;
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        });
+      <!-- Feature Card 2 -->
+      <div class="card">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; color: var(--status-success); margin-bottom: 1.25rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff;">FRA Fee Transparency</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
+          Fees Regulating Authority (FRA) Maharashtra sanctioned annual tuition of ₹91,500 with zero hidden costs and dedicated Maharashtra scholarship support.
+        </p>
+      </div>
 
-        document.querySelectorAll('.feature-card').forEach((card) => {
-            card.style.opacity = 0;
-            card.style.transform = 'translateY(20px)';
-            card.style.transition = 'all 0.6s ease-out';
-            observer.observe(card);
-        });
+      <!-- Feature Card 3 -->
+      <div class="card">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(139, 92, 246, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-purple); margin-bottom: 1.25rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m16 6-4 4-4-4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
+        </div>
+        <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff;">TBI Startup Incubation</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
+          On-campus Technology Business Incubator (TBI) providing co-working space, venture mentoring, and seed funding for final-year MCA capstone projects.
+        </p>
+      </div>
 
-        // Wait for robot model to load
-        document.querySelector('iframe').addEventListener('load', function() {
-            setTimeout(() => {
-                document.querySelector('.chat-button-container').classList.add('visible');
-            }, 5000); // 5s delay after load
-        });
+      <!-- Feature Card 4 -->
+      <div class="card">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(249, 115, 22, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-orange); margin-bottom: 1.25rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff;">Placement Network</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
+          Active hiring partnerships with TCS, Infosys, Wipro, Capgemini, Cognizant, Tech Mahindra, and Persistent Systems with dedicated aptitude & coding hackathons.
+        </p>
+      </div>
+    </div>
+  </section>
 
-        function openChatbot() {
-            const button = document.querySelector('.glass-button');
-            button.classList.add('clicking');
-            
-            // Update the path to be relative
-            setTimeout(() => {
-                window.open('./bot.html', '_blank');
-            }, 400); // Open chat after 400ms
+  <!-- Footer -->
+  <footer class="campusiq-footer">
+    <div class="footer-container">
+      <div class="footer-line footer-line-primary">
+        <span class="footer-highlight">CampusIQ™</span> | Intelligent College Companion
+      </div>
+      <div class="footer-line footer-line-project">
+        MCA Final-Year Academic Project
+      </div>
+      <div class="footer-line footer-line-author">
+        Created & Developed by <strong class="footer-highlight">Shilpa Tayade</strong>
+      </div>
+      <div class="footer-line footer-line-institution">
+        JD College of Engineering and Management (JDCOEM), Nagpur
+      </div>
+      <div class="footer-line footer-line-code">
+        DTE Code: 04138
+      </div>
+    </div>
+  </footer>
 
-            // Remove clicking class after animation
-            setTimeout(() => {
-                button.classList.remove('clicking');
-            }, 800);
-        }
-
-        const texts = [
-            "A Wish...",
-            "An Idea...",
-            "A trouble...",
-            "The PROJECT...",
-            "Let's go...."
-        ];
-
-        const textElement = document.querySelector('.text-sequence');
-        let currentIndex = 0;
-
-        async function typeText(text, isLast = false) {
-            textElement.classList.add('typing');
-            for (let i = 0; i <= text.length; i++) {
-                textElement.textContent = text.slice(0, i);
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            if (!isLast) {
-                for (let i = text.length; i >= 0; i--) {
-                    textElement.textContent = text.slice(0, i);
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                }
-            }
-            textElement.classList.remove('typing');
-        }
-
-        async function animateSequence() {
-            for (let i = 0; i < texts.length; i++) {
-                await typeText(texts[i]);
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            // After the sequence, type "Let's talk" and keep it
-            await typeText("Let's talk...", true);
-        }
-
-        animateSequence();
-    </script>
-    <script src="./auth.js"></script> <!-- Add auth script -->
-    <script src="./js/audioUtils.js"></script>
-    <script src="./js/script.js"></script>
-    <!-- Change the href or onclick handlers of your chat buttons -->
-    <!-- <a href="bot.html" class="lets-talk">let's talk</a> --> <!-- Removed this link -->
-    <!-- If you have other chat buttons, modify them similarly -->
-    <script src="./audio.js" defer></script>
+  <!-- Core Scripts -->
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
 </body>
 </html>

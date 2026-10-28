@@ -1,380 +1,178 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>College Companion | Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <style>
-        /* Copy all root variables and basic styles from index.html */
-        :root {
-            --primary-bg: #0a0a0a;
-            --accent-1: #00ff9d;
-            --accent-2: #0095ff;
-            --text-primary: #f0f0f0;
-            --text-secondary: #888;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--primary-bg);
-            color: var(--text-primary);
-            overflow-x: hidden;
-            min-height: 100vh;
-        }
-
-        /* Copy header styles from index.html */
-        .cyber-header {
-            padding: 1.5rem 5%;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 100;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--accent-1);
-        }
-
-        .nav-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .nav-links a {
-            color: var(--text-primary);
-            text-decoration: none;
-            margin-left: 2rem;
-            position: relative;
-            transition: color 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--accent-1);
-        }
-
-        /* Login form specific styles */
-        .auth-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 6rem 1rem;
-        }
-
-        .cyber-form {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 3rem;
-            border-radius: 15px;
-            border: 1px solid var(--accent-1);
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 0 30px rgba(0, 255, 157, 0.1);
-        }
-
-        .cyber-title {
-            font-size: 2rem;
-            margin-bottom: 2rem;
-            background: linear-gradient(45deg, var(--accent-1), var(--accent-2));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 1rem;
-            background: rgba(30, 30, 30, 0.9);
-            border: 1px solid var(--accent-2);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            -webkit-text-fill-color: var(--text-primary);
-            -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.05) inset;
-            box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.05) inset;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--accent-1);
-            box-shadow: 0 0 15px rgba(0, 255, 157, 0.3);
-        }
-
-        .form-group input:-webkit-autofill,
-        .form-group input:-webkit-autofill:hover,
-        .form-group input:-webkit-autofill:focus {
-            -webkit-text-fill-color: var(--text-primary);
-            -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.05) inset;
-            transition: background-color 5000s ease-in-out 0s;
-        }
-
-        /* Override browser autofill styles */
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover,
-        input:-webkit-autofill:focus,
-        input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 30px rgb(30, 30, 30) inset !important;
-            -webkit-text-fill-color: var(--text-primary) !important;
-            caret-color: var(--text-primary) !important;
-        }
-
-        .cyber-button {
-            width: 100%;
-            background: linear-gradient(145deg, var(--accent-1), var(--accent-2));
-            color: var(--primary-bg);
-            border: none;
-            padding: 1rem;
-            font-size: 1rem;
-            cursor: pointer;
-            border-radius: 8px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 700;
-            transition: all 0.3s ease;
-        }
-
-        .cyber-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
-        }
-
-        @media (max-width: 768px) {
-            .auth-container {
-                padding: 4rem 1rem;
-            }
-
-            .cyber-form {
-                padding: 2rem 1.5rem;
-                width: 90%;
-            }
-
-            .cyber-title {
-                font-size: 1.8rem;
-            }
-
-            .form-group input {
-                padding: 0.8rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .cyber-form {
-                padding: 1.5rem 1rem;
-            }
-
-            .cyber-title {
-                font-size: 1.5rem;
-            }
-        }
-
-        /* Add mobile menu styles */
-        .menu-toggle {
-            display: none;
-            flex-direction: column;
-            gap: 6px;
-            padding: 5px;
-            z-index: 101;
-            cursor: pointer; /* Added cursor pointer */
-        }
-
-        .menu-toggle .bar {
-            width: 25px;
-            height: 2px;
-            background: var(--text-primary);
-            transition: 0.3s;
-        }
-
-        .menu-toggle.active .bar:nth-child(1) {
-            transform: rotate(45deg) translate(6px, 6px);
-        }
-
-        .menu-toggle.active .bar:nth-child(2) {
-            opacity: 0;
-        }
-
-        .menu-toggle.active .bar:nth-child(3) {
-            transform: rotate(-45deg) translate(6px, -6px);
-        }
-
-        @media (max-width: 768px) {
-            .nav-container { /* Added relative positioning */
-                position: relative;
-            }
-
-            .nav-links {
-                display: none;
-                position: absolute; /* Changed from fixed to absolute */
-                top: 100%; /* Position below header */
-                left: 0;
-                width: 100%;
-                background: rgba(10, 10, 10, 0.95);
-                padding: 1rem;
-                flex-direction: column;
-                align-items: center;
-                backdrop-filter: blur(10px);
-                border-bottom: 1px solid var(--accent-1);
-                z-index: 100;
-            }
-
-            .nav-links.active {
-                display: flex;
-            }
-
-            .nav-links a {
-                margin: 1rem 0; /* Adjusted margin */
-                font-size: 1.1rem;
-                width: 100%;
-                text-align: center;
-                padding: 0.5rem;
-            }
-
-            .menu-toggle {
-                display: flex; /* Changed from block to flex */
-            }
-        }
-
-        .password-container {
-            position: relative;
-            width: 100%;
-        }
-        
-        .toggle-password {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            border: none;
-            background: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            padding: 5px;
-        }
-        
-        .toggle-password:hover {
-            color: var(--accent-1);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — CampusIQ | JDCOEM Nagpur</title>
+  <meta name="description" content="Secure student and administrator login for CampusIQ at JD College of Engineering & Management.">
+  <link rel="stylesheet" href="assets/css/campusiq.css">
+  <link rel="icon" type="image/png" href="images/favicon.png" onerror="this.href='images/icon.png'">
 </head>
-
 <body>
-    <header class="cyber-header">
-        <nav class="nav-container">
-            <a href="index.html" style="text-decoration: none; color: inherit;">
-                <h1>College <span style="color: var(--accent-1);">Companion</span></h1>
-            </a>
-            <div class="nav-links">
-                <!-- Links will be populated by auth.js -->
-            </div>
-            <div class="menu-toggle">
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-            </div>
-        </nav>
+  <div class="ambient-bg"></div>
+  <div class="ambient-grid"></div>
 
-    </header>
+  <!-- Header -->
+  <header class="campusiq-nav">
+    <a href="index.html" class="nav-brand">
+      <div class="brand-emblem">JD</div>
+      <div class="brand-title">
+        <span class="brand-title-main">CampusIQ</span>
+        <span class="brand-title-sub">JDCOEM Nagpur</span>
+      </div>
+    </a>
+    <nav>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="bot.html" class="nav-link">CampusIQ Bot</a></li>
+        <li><a href="about_us.html" class="nav-link">About Us</a></li>
+      </ul>
+    </nav>
+  </header>
 
-    <main class="auth-container">
-        <div class="cyber-form">
-            <h2 class="cyber-title">Access Portal</h2>
-            <form id="loginForm">
-                <div class="form-group">
-                    <input type="email" id="email" placeholder="College Email" required>
-                </div>
-                <div class="form-group">
-                    <div class="password-container">
-                        <input type="password" id="password" placeholder="Password" required>
-                        <span class="toggle-password">🙈</span>
-                    </div>
-                </div>
-                <button type="submit" class="cyber-button">Login</button>
-            </form>
+  <main style="min-height: calc(100vh - 160px); display: flex; align-items: center; justify-content: center; padding: 2rem 1rem;">
+    <div class="auth-container">
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <span class="badge badge-mca" style="margin-bottom: 0.75rem;">Secure Authentication</span>
+        <h1 style="font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em;">Welcome Back</h1>
+        <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.35rem;">
+          Sign in to access personalized JDCOEM MCA companion features and inquiry history.
+        </p>
+      </div>
+
+      <!-- Error / Alert Box -->
+      <div id="auth-alert" style="display: none; padding: 0.75rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem; margin-bottom: 1.25rem;"></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label for="email" class="form-label">Email Address</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            class="form-control" 
+            placeholder="student@campusiq.edu" 
+            required 
+            autocomplete="email"
+          />
         </div>
-    </main>
 
-    <script>
-        // Toggle navigation menu
-        document.querySelector('.menu-toggle').addEventListener('click', () => {
-            document.querySelector('.nav-links').classList.toggle('active');
-            document.querySelector('.menu-toggle').classList.toggle('active'); // Toggle active on button too
-        });
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <div style="position: relative;">
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              class="form-control" 
+              placeholder="••••••••••••" 
+              required 
+              autocomplete="current-password"
+            />
+            <button 
+              type="button" 
+              id="btn-toggle-pwd" 
+              style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem;"
+              title="Show/Hide Password"
+            >
+              👁️
+            </button>
+          </div>
+        </div>
 
-        // Login Logic
-        const loginForm = document.getElementById('loginForm');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
+        <button type="submit" id="btn-submit" class="btn btn-primary" style="width: 100%; padding: 0.8rem; font-size: 0.95rem; margin-top: 0.5rem;">
+          Sign In to CampusIQ
+        </button>
+      </form>
 
-        loginForm.addEventListener('submit', (event) => {
-            event.preventDefault(); // Prevent default form submission
+      <div style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-muted);">
+        Don't have an account? <a href="signup.html" style="color: var(--accent-blue); font-weight: 600; text-decoration: none;">Create one here</a>
+      </div>
 
-            const email = emailInput.value.trim();
-            const password = passwordInput.value;
+      <!-- Seeded Demo Accounts Helper -->
+      <div style="margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border-subtle); font-size: 0.76rem; color: var(--text-muted);">
+        <div style="font-weight: 700; text-transform: uppercase; margin-bottom: 0.35rem; color: var(--text-secondary);">Demo Test Credentials:</div>
+        <div>• <strong>Admin:</strong> admin@campusiq.edu / AdminCampusIQ@2025</div>
+        <div>• <strong>Student:</strong> student@campusiq.edu / StudentCampusIQ@2025</div>
+      </div>
+    </div>
+  </main>
 
-            // Basic validation
-            if (!email || !password) {
-                alert('Please enter both email and password.');
-                return;
-            }
+  <!-- Footer -->
+  <footer class="campusiq-footer">
+    <div class="footer-container">
+      <div class="footer-line footer-line-primary">
+        <span class="footer-highlight">CampusIQ™</span> | Intelligent College Companion
+      </div>
+      <div class="footer-line footer-line-project">
+        MCA Final-Year Academic Project
+      </div>
+      <div class="footer-line footer-line-author">
+        Created & Developed by <strong class="footer-highlight">Shilpa Tayade</strong>
+      </div>
+      <div class="footer-line footer-line-institution">
+        JD College of Engineering and Management (JDCOEM), Nagpur
+      </div>
+      <div class="footer-line footer-line-code">
+        DTE Code: 04138
+      </div>
+    </div>
+  </footer>
 
-            // --- Local Storage Interaction ---
-            let users = JSON.parse(localStorage.getItem('users')) || [];
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('login-form');
+      const emailInput = document.getElementById('email');
+      const passwordInput = document.getElementById('password');
+      const alertBox = document.getElementById('auth-alert');
+      const submitBtn = document.getElementById('btn-submit');
+      const togglePwdBtn = document.getElementById('btn-toggle-pwd');
 
-            // Find user with matching email and password
-            // IMPORTANT: Comparing plain text passwords is INSECURE. This is for demonstration only.
-            // IMPORTANT: Comparing plain text passwords is INSECURE. This is for demonstration only.
-            const foundUser = users.find(user => user.email === email && user.password === password);
+      // Password visibility toggle
+      togglePwdBtn.addEventListener('click', () => {
+        const isPassword = passwordInput.type === 'password';
+        passwordInput.type = isPassword ? 'text' : 'password';
+        togglePwdBtn.textContent = isPassword ? '🔒' : '👁️';
+      });
 
-            if (foundUser) {
-                // Store login status and user info in localStorage
-                localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('loggedInUser', JSON.stringify({ fullName: foundUser.fullName, email: foundUser.email }));
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        alertBox.style.display = 'none';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Authenticating...';
 
-                // Display success message
-                alert('Logged in successfully!'); // Updated success message
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
 
-                // Check for admin credentials and redirect accordingly
-                if (email === 'masss@gmail.com' && password === 'Pappupass') {
-                    window.location.href = 'admin_view.html'; // Redirect admin
-                } else {
-                    window.location.href = 'Home.html'; // Ensure capital H to match file name
-                }
+        const result = await window.auth.login(email, password);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In to CampusIQ';
+
+        if (result.success) {
+          alertBox.style.display = 'block';
+          alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
+          alertBox.style.border = '1px solid #10b981';
+          alertBox.style.color = '#34d399';
+          alertBox.textContent = 'Login successful! Redirecting...';
+
+          setTimeout(() => {
+            if (result.user.role === 'admin') {
+              window.location.href = 'admin_view.html';
             } else {
-                alert('Invalid email or password.');
-                localStorage.removeItem('isLoggedIn'); // Ensure logged out state if login fails
-                localStorage.removeItem('loggedInUser');
+              window.location.href = 'bot.html';
             }
-        });
-
-        // Password toggle functionality
-        const togglePassword = document.querySelector('.toggle-password');
-        togglePassword.addEventListener('click', function() {
-            const passwordInput = document.getElementById('password');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                this.textContent = '🙊';
-            } else {
-                passwordInput.type = 'password';
-                this.textContent = '🙈';
-            }
-        });
-    </script>
-    <script src="auth.js"></script> <!-- Add auth script -->
-    <script src="audio.js" defer></script>
+          }, 600);
+        } else {
+          alertBox.style.display = 'block';
+          alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+          alertBox.style.border = '1px solid #ef4444';
+          alertBox.style.color = '#f87171';
+          alertBox.textContent = result.error || 'Invalid email or password.';
+        }
+      });
+    });
+  </script>
 </body>
 </html>

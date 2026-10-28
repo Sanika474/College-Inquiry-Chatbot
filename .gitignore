@@ -1,0 +1,35 @@
+# Python virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment files
+.env
+.env.local
+*.env
+**/.env
+backend/.env
+
+# Operating System files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE configuration
+.vscode/
+.idea/
+
+# Database files & logs
+*.sqlite3
+*.log

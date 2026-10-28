@@ -1,425 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>College Companion | Sign Up</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <!-- Add Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <style>
-        :root {
-            --primary-bg: #0a0a0a;
-            --accent-1: #00ff9d;
-            --accent-2: #0095ff;
-            --text-primary: #f0f0f0;
-            --text-secondary: #888;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--primary-bg);
-            color: var(--text-primary);
-            overflow-x: hidden;
-            min-height: 100vh;
-        }
-
-        .cyber-header {
-            padding: 1.5rem 5%;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 100;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--accent-1);
-        }
-
-        .nav-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .nav-links a {
-            color: var(--text-primary);
-            text-decoration: none;
-            margin-left: 2rem;
-            position: relative;
-            transition: color 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--accent-1);
-        }
-
-        .auth-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 6rem 1rem;
-        }
-
-        .cyber-form {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 3rem;
-            border-radius: 15px;
-            border: 1px solid var(--accent-1);
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 0 30px rgba(0, 255, 157, 0.1);
-            animation: formAppear 0.5s ease-out;
-        }
-
-        @keyframes formAppear {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .cyber-title {
-            font-size: 2rem;
-            margin-bottom: 2rem;
-            background: linear-gradient(45deg, var(--accent-1), var(--accent-2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-            animation: glowText 2s ease-in-out infinite alternate;
-        }
-
-        @keyframes glowText {
-            from { text-shadow: 0 0 10px rgba(0, 255, 157, 0.5); }
-            to { text-shadow: 0 0 20px rgba(0, 255, 157, 0.8); }
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 1rem;
-            background: rgba(30, 30, 30, 0.9);
-            border: 1px solid var(--accent-2);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        /* Override browser autofill styles */
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover,
-        input:-webkit-autofill:focus,
-        input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 30px rgb(30, 30, 30) inset !important;
-            -webkit-text-fill-color: var(--text-primary) !important;
-            caret-color: var(--text-primary) !important;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--accent-1);
-            box-shadow: 0 0 15px rgba(0, 255, 157, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .cyber-button {
-            width: 100%;
-            background: linear-gradient(145deg, var(--accent-1), var(--accent-2));
-            color: var(--primary-bg);
-            border: none;
-            padding: 1rem;
-            font-size: 1rem;
-            cursor: pointer;
-            border-radius: 8px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 700;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cyber-button::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                45deg,
-                transparent,
-                rgba(255, 255, 255, 0.3),
-                transparent
-            );
-            transform: rotate(45deg);
-            animation: buttonGlow 2s linear infinite;
-        }
-
-        @keyframes buttonGlow {
-            0% { transform: rotate(45deg) translateX(-100%); }
-            100% { transform: rotate(45deg) translateX(100%); }
-        }
-
-        .cyber-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
-        }
-
-        .cyber-button:active {
-            transform: scale(0.98);
-        }
-
-        /* Add mobile menu styles */
-        .menu-toggle {
-            display: none;
-            flex-direction: column;
-            gap: 6px;
-            padding: 5px;
-            z-index: 101;
-            cursor: pointer; /* Added cursor pointer */
-        }
-
-        .menu-toggle .bar {
-            width: 25px;
-            height: 2px;
-            background: var(--text-primary);
-            transition: 0.3s;
-        }
-
-        .menu-toggle.active .bar:nth-child(1) {
-            transform: rotate(45deg) translate(6px, 6px);
-        }
-
-        .menu-toggle.active .bar:nth-child(2) {
-            opacity: 0;
-        }
-
-        .menu-toggle.active .bar:nth-child(3) {
-            transform: rotate(-45deg) translate(6px, -6px);
-        }
-
-        @media (max-width: 768px) {
-            .nav-container { /* Added relative positioning */
-                position: relative;
-            }
-
-            .nav-links {
-                display: none;
-                position: absolute; /* Changed from fixed to absolute */
-                top: 100%; /* Position below header */
-                left: 0;
-                width: 100%;
-                background: rgba(10, 10, 10, 0.95);
-                padding: 1rem;
-                flex-direction: column;
-                align-items: center;
-                backdrop-filter: blur(10px);
-                border-bottom: 1px solid var(--accent-1);
-                z-index: 100;
-            }
-
-            .nav-links.active {
-                display: flex;
-            }
-
-            .nav-links a {
-                margin: 1rem 0; /* Adjusted margin */
-                font-size: 1.1rem;
-                width: 100%;
-                text-align: center;
-                padding: 0.5rem;
-            }
-
-            .menu-toggle {
-                display: flex; /* Changed from block to flex */
-            }
-        }
-
-        .password-container {
-            position: relative;
-        }
-
-        .toggle-password {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--accent-1);
-            transition: all 0.3s ease;
-        }
-
-        .toggle-password:focus {
-            outline: none;
-        }
-
-        .toggle-password i {
-            font-size: 18px;
-            pointer-events: none;
-        }
-
-        .toggle-password:hover {
-            transform: translateY(-50%) scale(1.1);
-        }
-
-        .toggle-password:active {
-            transform: translateY(-50%) scale(0.9);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account — CampusIQ | JDCOEM Nagpur</title>
+  <meta name="description" content="Register student account on CampusIQ for JD College of Engineering & Management.">
+  <link rel="stylesheet" href="assets/css/campusiq.css">
+  <link rel="icon" type="image/png" href="images/favicon.png" onerror="this.href='images/icon.png'">
 </head>
 <body>
-    <header class="cyber-header">
-        <nav class="nav-container">
-            <a href="index.html" style="text-decoration: none; color: inherit;">
-                <h1>College <span style="color: var(--accent-1);">Companion</span></h1>
-            </a>
-            <div class="nav-links">
-                <!-- Links will be populated by auth.js -->
-            </div>
-            <div class="menu-toggle">
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-            </div>
-        </nav>
-    </header>
+  <div class="ambient-bg"></div>
+  <div class="ambient-grid"></div>
 
-    <main class="auth-container">
-        <div class="cyber-form">
-            <h2 class="cyber-title">Create Account</h2>
-            <form id="signupForm">
-                <div class="form-group">
-                    <input type="text" id="fullName" placeholder="Full Name" required>
-                </div>
-                <div class="form-group">
-                    <input type="email" id="email" placeholder="College Email" required 
-                           class="audio-input" 
-                           data-audio="typing">
-                </div>
-                <div class="form-group">
-                    <div class="password-container">
-                        <input type="password" id="password" placeholder="Create Password" required>
-                        <span class="toggle-password" data-target="password">🙈</span>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <div class="password-container">
-                        <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
-                        <span class="toggle-password" data-target="confirmPassword">🙈</span>
-                    </div>
-                </div>
-                <button type="submit" class="cyber-button">Sign Up</button>
-            </form>
+  <!-- Header -->
+  <header class="campusiq-nav">
+    <a href="index.html" class="nav-brand">
+      <div class="brand-emblem">JD</div>
+      <div class="brand-title">
+        <span class="brand-title-main">CampusIQ</span>
+        <span class="brand-title-sub">JDCOEM Nagpur</span>
+      </div>
+    </a>
+    <nav>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="bot.html" class="nav-link">CampusIQ Bot</a></li>
+        <li><a href="about_us.html" class="nav-link">About Us</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main style="min-height: calc(100vh - 160px); display: flex; align-items: center; justify-content: center; padding: 2rem 1rem;">
+    <div class="auth-container">
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <span class="badge badge-autonomous" style="margin-bottom: 0.75rem;">New Student Registration</span>
+        <h1 style="font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em;">Create Your Account</h1>
+        <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.35rem;">
+          Join the JDCOEM CampusIQ academic network for verified inquiry guidance.
+        </p>
+      </div>
+
+      <!-- Alert Box -->
+      <div id="auth-alert" style="display: none; padding: 0.75rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem; margin-bottom: 1.25rem;"></div>
+
+      <form id="signup-form">
+        <div class="form-group">
+          <label for="fullname" class="form-label">Full Name</label>
+          <input 
+            type="text" 
+            id="fullname" 
+            name="fullname" 
+            class="form-control" 
+            placeholder="e.g. Shilpa Tayade" 
+            required 
+            autocomplete="name"
+          />
         </div>
-    </main>
 
-    <script>
-        // Remove the first duplicate password toggle code block
-        
-        // Toggle navigation menu
-        document.querySelector('.menu-toggle').addEventListener('click', () => {
-            document.querySelector('.nav-links').classList.toggle('active');
-            document.querySelector('.menu-toggle').classList.toggle('active');
-        });
+        <div class="form-group">
+          <label for="email" class="form-label">Email Address</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            class="form-control" 
+            placeholder="shilpa@example.com" 
+            required 
+            autocomplete="email"
+          />
+        </div>
 
-        // Signup Logic
-        const signupForm = document.getElementById('signupForm');
-        const fullNameInput = document.getElementById('fullName');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const confirmPasswordInput = document.getElementById('confirmPassword');
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            class="form-control" 
+            placeholder="Minimum 8 characters" 
+            required 
+            minlength="8"
+            autocomplete="new-password"
+          />
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.3rem;">Must contain at least 8 characters.</div>
+        </div>
 
-        // Password toggle functionality
-        document.querySelectorAll('.toggle-password').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault(); // Prevent form submission
-                const targetId = this.getAttribute('data-target');
-                const input = document.getElementById(targetId);
-                
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    this.innerHTML = '🙊'; // Use innerHTML instead of textContent
-                } else {
-                    input.type = 'password';
-                    this.innerHTML = '🙈'; // Use innerHTML instead of textContent
-                }
-            });
-        });
+        <div class="form-group">
+          <label for="confirm-password" class="form-label">Confirm Password</label>
+          <input 
+            type="password" 
+            id="confirm-password" 
+            name="confirm-password" 
+            class="form-control" 
+            placeholder="Re-enter password" 
+            required 
+            minlength="8"
+            autocomplete="new-password"
+          />
+        </div>
 
-        signupForm.addEventListener('submit', (event) => {
-            event.preventDefault(); // Prevent default form submission
+        <button type="submit" id="btn-submit" class="btn btn-primary" style="width: 100%; padding: 0.8rem; font-size: 0.95rem; margin-top: 0.5rem;">
+          Register Account
+        </button>
+      </form>
 
-            const fullName = fullNameInput.value.trim();
-            const email = emailInput.value.trim();
-            const password = passwordInput.value;
-            const confirmPassword = confirmPasswordInput.value;
+      <div style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-muted);">
+        Already have an account? <a href="login.html" style="color: var(--accent-blue); font-weight: 600; text-decoration: none;">Sign in here</a>
+      </div>
+    </div>
+  </main>
 
-            // Basic validation
-            if (!fullName || !email || !password || !confirmPassword) {
-                alert('Please fill in all fields.');
-                return;
-            }
+  <!-- Footer -->
+  <footer class="campusiq-footer">
+    <div class="footer-container">
+      <div class="footer-line footer-line-primary">
+        <span class="footer-highlight">CampusIQ™</span> | Intelligent College Companion
+      </div>
+      <div class="footer-line footer-line-project">
+        MCA Final-Year Academic Project
+      </div>
+      <div class="footer-line footer-line-author">
+        Created & Developed by <strong class="footer-highlight">Shilpa Tayade</strong>
+      </div>
+      <div class="footer-line footer-line-institution">
+        JD College of Engineering and Management (JDCOEM), Nagpur
+      </div>
+      <div class="footer-line footer-line-code">
+        DTE Code: 04138
+      </div>
+    </div>
+  </footer>
 
-            if (password !== confirmPassword) {
-                alert('Passwords do not match.');
-                return;
-            }
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('signup-form');
+      const fullnameInput = document.getElementById('fullname');
+      const emailInput = document.getElementById('email');
+      const passwordInput = document.getElementById('password');
+      const confirmInput = document.getElementById('confirm-password');
+      const alertBox = document.getElementById('auth-alert');
+      const submitBtn = document.getElementById('btn-submit');
 
-            // --- Local Storage Interaction ---
-            // IMPORTANT: Storing passwords directly in localStorage is insecure and not recommended for production applications.
-            // Passwords should be securely hashed on a server-side backend. This is for demonstration purposes only.
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        alertBox.style.display = 'none';
 
-            let users = JSON.parse(localStorage.getItem('users')) || [];
+        const fullName = fullnameInput.value.trim();
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        const confirm = confirmInput.value;
 
-            // Check if email already exists
-            const existingUser = users.find(user => user.email === email);
-            if (existingUser) {
-                alert('An account with this email already exists.');
-                return;
-            }
+        if (password !== confirm) {
+          alertBox.style.display = 'block';
+          alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+          alertBox.style.border = '1px solid #ef4444';
+          alertBox.style.color = '#f87171';
+          alertBox.textContent = 'Passwords do not match.';
+          return;
+        }
 
-            // Add new user
-            const newUser = {
-                fullName: fullName,
-                email: email,
-                password: password // Storing plain password - INSECURE!
-            };
-            users.push(newUser);
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating Account...';
 
-            // Save updated user list to localStorage
-            localStorage.setItem('users', JSON.stringify(users));
+        const result = await window.auth.register(fullName, email, password);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Register Account';
 
-            alert('Sign up successfully!'); // Updated success message
-            // Optionally redirect to login page
+        if (result.success) {
+          alertBox.style.display = 'block';
+          alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
+          alertBox.style.border = '1px solid #10b981';
+          alertBox.style.color = '#34d399';
+          alertBox.textContent = 'Account created successfully! Redirecting to login...';
+
+          setTimeout(() => {
             window.location.href = 'login.html';
-        });
-    </script>
-    <script src="auth.js"></script> <!-- Add auth script -->
-    <script src="audio.js" defer></script>
+          }, 1200);
+        } else {
+          alertBox.style.display = 'block';
+          alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+          alertBox.style.border = '1px solid #ef4444';
+          alertBox.style.color = '#f87171';
+          alertBox.textContent = result.error || 'Registration failed. Please try again.';
+        }
+      });
+    });
+  </script>
 </body>
 </html>
