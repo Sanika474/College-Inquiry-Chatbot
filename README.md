@@ -11,7 +11,7 @@
 [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%2018-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![SQLAlchemy](https://img.shields.io/badge/ORM-SQLAlchemy%202.0-d71f00?style=for-the-badge&logo=sqlalchemy&logoColor=white)](https://www.sqlalchemy.org)
 [![Security](https://img.shields.io/badge/Security-Argon2id%20%7C%20Signed%20Cookies-10b981?style=for-the-badge&logo=shield&logoColor=white)](#security-architecture)
-[![Testing](https://img.shields.io/badge/Tests-44%2F44%20Passing%20(100%25)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#automated-testing-suite)
+[![Testing](https://img.shields.io/badge/Tests-58%2F58%20Passing%20(100%25)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#automated-testing-suite)
 [![Python](https://img.shields.io/badge/Python-3.13.15-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org)
 
 ---
@@ -124,6 +124,9 @@ erDiagram
 | **`faculty`** | `id` (Integer) | `department_id` -> `departments.id` | Faculty member profiles: HOD (Prof. Rohan Kokate), Project Coordinator (Prof. Chetan Padole), designations, qualifications (Ph.D./M.Tech/MCA), and research specializations. |
 | **`facilities`** | `id` (Integer) | `college_id` -> `college_info.id` | Campus infrastructure details: Technology Business Incubator (TBI), Central Library, AI & Computing Labs, Sports Complex, Hostels, and Bus Transportation Routes. |
 | **`knowledge_documents`**| `id` (Integer) | `college_id` -> `college_info.id` | Curated institutional policies: 75% Mandatory Attendance Rule, DTE CAP Admission Protocols, Autonomous Exam Regulations, and Code of Conduct. |
+| **`kb_documents`** | `id` (Integer) | None | Ingested repository files from `Knowledge_Base/`: filename, file type, file size, SHA-256 checksum, page count, chunk count, category, and ingestion status. |
+| **`kb_chunks`** | `id` (Integer) | `document_id` -> `kb_documents.id` | Extracted passages indexed at heading, paragraph, and table boundaries with page numbers, section headings, token counts, and content checksums. |
+| **`kb_ingestion_jobs`** | `id` (Integer) | None | Ingestion execution tracker: job ID, status, total files, processed, skipped, failed counts, error summaries, and execution timestamps. |
 | **`conversations`** | `id` (Integer) | `user_id` -> `users.id` (Nullable) | Chat sessions grouping message history for both registered students and anonymous campus visitors. |
 | **`messages`** | `id` (Integer) | `conversation_id` -> `conversations.id` | Complete turn-by-turn log: sender (`user`/`bot`), inquiry text, response text, processing engine (`rule_based`/`ai_fallback`/`clarification`), confidence score, and latency. |
 | **`audit_logs`** | `id` (Integer) | `user_id` -> `users.id` (Nullable) | Security audit trail recording administrative actions, logins, user modifications, and report downloads with IP and timestamp. |
@@ -216,7 +219,120 @@ sequenceDiagram
 
 ---
 
-## 5. Security Architecture & Threat Mitigation
+## 5. Knowledge Base Pipeline & Intelligent Ingestion Engine
+
+CampusIQ features an autonomous, multi-format knowledge extraction and retrieval pipeline engineered to turn unstructured academic documents into queryable, grounded knowledge records.
+
+### Knowledge Base Repository Inventory (13 Documents Audited)
+
+The institutional repository folder `Knowledge_Base/` was deeply audited and processed:
+
+| File Name | File Type | Size | Pages | Chunks | Topic & Academic Content | Ingestion Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`Cloud Computing unit I.docx`** | `.docx` | 338 KB | 14 sections | 18 | NIST Cloud models, IaaS, PaaS, SaaS, hypervisors, virtualization, scalability | `indexed` (Active) |
+| **`DBMS_Complete_Notes_English.pdf`** | `.pdf` | 647 KB | 18 pages | 18 | Relational Algebra, ER Models, Normalization (1NF to BCNF), Transactions & ACID | `indexed` (Active) |
+| **`DSA_All_Chapters_English_Notes.pdf`** | `.pdf` | 1.13 MB | 18 pages | 18 | Arrays, Stacks, Queues, Linked Lists, Trees, Graph Traversals, Sorting/Searching | `indexed` (Active) |
+| **`Discrete_Mathematics_Graph_Theory_Complete_Notes.pdf`** | `.pdf` | 741 KB | 25 pages | 25 | Eulerian graphs, Hamiltonian cycles, Planar graphs, Graph coloring, Isomorphisms | `indexed` (Active) |
+| **`MCA SEM 1 Syllabus Final.pdf`** | `.pdf` | 506 KB | 22 pages | 22 | DBATU Autonomous Scheme 2024–2026, MC1T001 to MC1T005, credits, continuous assessment | `indexed` (Active) |
+| **`MCA SEM 2 Syllabus Final.pdf`** | `.pdf` | 496 KB | 26 pages | 26 | MC2T001 (Advanced DBMS), MC2T002 (AI), Electives, Marks distribution (CA/MSE/ESE) | `indexed` (Active) |
+| **`Operating_System_Complete_Notes_English.pdf`** | `.pdf` | 682 KB | 10 pages | 10 | CPU Scheduling algorithms, Deadlock prevention & Banker's algorithm, Paging & Virtual Memory | `indexed` (Active) |
+| **`QUESTION BANK DBMS.docx`** | `.docx` | 19.8 KB | 1 section | 3 | University examination question bank on database architectures & queries | `indexed` (Active) |
+| **`Question Bank PHP 2026.pdf`** | `.pdf` | 91.5 KB | 2 pages | 2 | Examination questions on PHP arrays, superglobals, server-side forms, cookies/sessions | `indexed` (Active) |
+| **`Questions Bank - AI.pdf`** | `.pdf` | 77.1 KB | 2 pages | 2 | Curated university questions on heuristic search, A* algorithm, knowledge representation | `indexed` (Active) |
+| **`MCA-Ist sem Academic Calendar .pdf`** | `.pdf` | 4.88 MB | 3 pages | 0 | Scanned administrative calendar (term start/end dates, holidays, examination windows) | `scanned_ocr_required` |
+| **`PHP Unit 2 Notes.pdf`** | `.pdf` | 23.3 MB | 44 pages | 0 | Scanned handwritten/photocopied lecture notes on PHP unit 2 curriculum | `scanned_ocr_required` |
+| **`WhatsApp Image 2026-03-24 at 1.48.51 PM.jpeg`**| `.jpeg`| 440 KB | N/A | 0 | Departmental announcement flyer | `scanned_ocr_required` |
+
+> [!NOTE]
+> **Total Indexed Chunks:** 144 chunks spanning 10 documents, containing **38,826 tokens/words** stored in PostgreSQL 18.  
+> **Scanned Document Guardrail:** 3 files contain scanned raster images. The system transparently flags them as `scanned_ocr_required` rather than silently treating them as empty.
+
+---
+
+### Ingestion Pipeline Architecture
+
+```
+Knowledge_Base/ Folder
+         │
+         ▼
+[File Discovery & SHA-256 Checksum Calculation]
+         │
+         ├─► SHA-256 matches existing DB record? ──► SKIP (Zero redundant processing)
+         │
+         ▼
+[Format-Specific Document Extractor] (pypdf, python-docx, csv, json, text)
+         │
+         ├─► Extracted text length == 0? ──► Mark as 'scanned_ocr_required'
+         │
+         ▼
+[Heading & Paragraph-Aware Chunker] (Target: 220 words, Max: 420 words, Overlap: 25 words)
+         │
+         ▼
+[PostgreSQL Ingestion Transaction] (Store in kb_documents and kb_chunks, commit job summary)
+```
+
+1. **Idempotency & Duplicate Prevention:** Every file is hashed using SHA-256. Running the ingestion pipeline repeatedly (`python ingest_knowledge.py` or via the Admin Dashboard) skips unchanged files in milliseconds with zero duplicate rows.
+2. **Heading & Page Preservation:** Chunks record `page_number`, `section_heading`, and `document_id`. Citations are automatically generated in the format: `Source: MCA SEM 1 Syllabus Final.pdf, Page 3`.
+
+---
+
+### Intelligent Question Classification & Typing
+
+CampusIQ's NLP module (`backend/app/chatbot/intent_classifier.py`) analyzes question structure before matching:
+- **Question Types:**
+  - `definition`: Conceptual meaning (e.g., *"What is ACID in DBMS?"*)
+  - `procedural`: Step-by-step processes (e.g., *"How to apply for MCA admissions?"*)
+  - `fee`: Itemized financial breakdown (e.g., *"What is the MCA fee structure?"*)
+  - `syllabus`: Course structure, codes, credits, assessment rules (e.g., *"MCA Sem 1 syllabus"*)
+  - `concept`: Technical topics from lecture notes (e.g., *"Explain paging in Operating Systems"*)
+  - `question_bank`: Exam preparation questions (e.g., *"AI question bank"*)
+  - `comparison`: Structured contrast (e.g., *"Difference between SQL and NoSQL"*)
+  - `multipart`: Multiple inquiries in one message (e.g., *"What are MCA fees and who is the HOD?"*)
+  - `follow_up`: Pronoun and context resolution referencing prior conversation turns.
+- **Ambiguity Detection:** Competing intents with overlapping confidence scores trigger an interactive clarification prompt rather than guessing.
+
+---
+
+### Multi-Strategy Knowledge Retrieval & Ranking
+
+Chunks in `kb_chunks` are evaluated using a weighted multi-strategy scoring function:
+$$\text{Score} = \text{PhraseMatch}(+4.0) + \text{HeadingMatch}(+2.5) + \text{KeywordDensity}(+0.4) + \text{SubjectAlignment}(+2.0) + \text{CoverageRatio}(+3.0)$$
+
+1. **Exact Phrase Boost (+4.0):** Rewards chunks containing the exact multi-word search phrase.
+2. **Section Heading Match (+2.5):** Chunks where headings explicitly mention search tokens receive high priority.
+3. **Subject Domain Alignment (+2.0):** If the classifier identifies the subject as DBMS, chunks from `DBMS_Complete_Notes_English.pdf` outrank unrelated documents containing generic terms.
+4. **Semester Alignment (+2.0):** Distinguishes between Sem 1 and Sem 2 syllabus documents.
+
+---
+
+### Contextual Answer Generation & Grounding
+
+The Answer Builder (`backend/app/chatbot/answer_builder.py`) structures responses according to the detected inquiry type:
+- **Definitions:** Lead with an extracted formal definition blockquote, followed by technical explanation and real-world system applications.
+- **Syllabi:** Present course codes (e.g., `MC1L008`), course titles, credit distributions ($L:T:P$), and official Continuous Assessment (CA 40%, MSE 20%, ESE 60%) passing criteria.
+- **Question Banks:** Format categorized questions with bullet points and examination writing tips.
+- **Comparisons:** Present structured Markdown tables comparing architectures, memory requirements, and use cases.
+- **Multi-Part Queries:** Break down complex inquiries into numbered sub-answers (`Part 1`, `Part 2`) with dedicated source citations.
+- **Transparent Scanned File Notices:** When students ask about scanned files (e.g., `Academic Calendar`), CampusIQ clearly states that OCR is required and directs them to the college notice board.
+
+---
+
+### How to Run & Verify Ingestion
+
+**Via Command Line:**
+```powershell
+# From the project root
+.\.venv\Scripts\python backend/ingest_knowledge.py
+```
+
+**Via Admin Web Dashboard:**
+1. Log in to `admin_view.html` with administrator credentials (`admin@jdcoem.ac.in`).
+2. Click the **"Sync Knowledge Base"** button in the dashboard header.
+3. The table displays real-time document counts, indexed chunks, checksums, and status badges.
+
+---
+
+## 6. Security Architecture & Threat Mitigation
 
 CampusIQ was rebuilt from the ground up to eliminate critical vulnerabilities commonly found in student academic projects:
 
@@ -237,7 +353,7 @@ CampusIQ was rebuilt from the ground up to eliminate critical vulnerabilities co
 
 ---
 
-## 6. Installation & Local Setup Guide
+## 7. Installation & Local Setup Guide
 
 ### Prerequisites
 - **Python:** 3.11, 3.12, or 3.13+
@@ -295,12 +411,22 @@ OPENAI_API_KEY=
 ```
 
 ### Step 5: Run Database Migrations
-Apply the initial schema migration via Alembic:
+Apply the schema migrations (including Knowledge Base tables) via Alembic:
 ```bash
 alembic upgrade head
 ```
 
-### Step 6: Seed Authentic JDCOEM Institutional Data
+### Step 6: Ingest Knowledge Base Documents
+Execute the idempotent ingestion pipeline to extract, chunk, and index all 13 documents:
+```powershell
+# Windows PowerShell
+.\.venv\Scripts\python backend/ingest_knowledge.py
+
+# Linux / macOS
+python backend/ingest_knowledge.py
+```
+
+### Step 7: Seed Authentic JDCOEM Institutional Data
 Populate the database with verified JDCOEM MCA courses, fees, faculty, facilities, and initial accounts:
 ```powershell
 # Windows PowerShell
@@ -310,7 +436,7 @@ $env:PYTHONPATH="backend"; python backend/app/seed.py
 PYTHONPATH=backend python backend/app/seed.py
 ```
 
-### Step 7: Launch the Unified CampusIQ Server
+### Step 8: Launch the Unified CampusIQ Server
 Run the FastAPI production-ready ASGI server via Uvicorn:
 ```bash
 python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 --reload
@@ -323,7 +449,7 @@ http://127.0.0.1:8000/index.html
 
 ---
 
-## 7. Automated Testing Suite
+## 8. Automated Testing Suite
 
 CampusIQ includes a comprehensive test suite using **Pytest** and **HTTPX AsyncClient**, testing database models, authentication flows, the rule engine, the AI fallback provider, college inquiry endpoints, and admin privileges.
 
@@ -388,12 +514,12 @@ backend/tests/test_rule_engine.py::test_facilities_classification PASSED [ 95%]
 backend/tests/test_rule_engine.py::test_institutional_policies PASSED    [ 97%]
 backend/tests/test_rule_engine.py::test_unknown_inquiry_fallback PASSED  [100%]
 
-============================= 44 passed in 7.84s ==============================
+============================= 58 passed in 7.63s ==============================
 ```
 
 ---
 
-## 8. MCA Final-Year Viva Voce Defense Guide (20 Questions & Answers)
+## 9. MCA Final-Year Viva Voce Defense Guide (20 Questions & Answers)
 
 This section provides comprehensive, academically rigorous answers to 20 key technical questions commonly asked during Master of Computer Applications (MCA) project viva examinations.
 
@@ -533,15 +659,16 @@ RBAC is enforced both on the server (FastAPI) and the client (JavaScript):
 
 ### Q15: What testing methodology was implemented to validate system reliability?
 **Answer:**  
-We implemented an **Automated Test-Driven Verification Methodology** using Pytest and HTTPX AsyncClient, organized into 7 specialized test modules:
+We implemented an **Automated Test-Driven Verification Methodology** using Pytest and HTTPX AsyncClient, organized into 8 specialized test modules:
 1. `test_health.py`: Verifies service availability and API status endpoints.
 2. `test_database.py`: Verifies relational constraints, cascade rules, and Argon2id password integrity.
 3. `test_auth.py`: Tests user registration, duplicate email rejection, weak password rejection, cookie issuance, and session logout.
 4. `test_college.py`: Tests public college information, courses, faculty, and fee endpoints.
 5. `test_rule_engine.py`: Unit tests normalization, intent categorization, priority resolution, and ambiguity handling.
-6. `test_ai_fallback.py`: Tests the LLM provider, mock responses, network timeouts, and graceful offline degradation.
-7. `test_admin.py`: Tests RBAC enforcement, unauthorized access rejection, user management, and CSV report generation.
-**Result:** 44/44 tests pass with 100% success rate in 7.84 seconds.
+6. `test_knowledge_pipeline.py`: Unit and integration tests for document extraction (PDF, DOCX, TXT), chunking, idempotency, weighted retrieval scoring, contextual answer builder, and scanned-document OCR notices.
+7. `test_ai_fallback.py`: Tests the LLM provider, mock responses, network timeouts, and graceful offline degradation.
+8. `test_admin.py`: Tests RBAC enforcement, unauthorized access rejection, user management, and CSV report generation.
+**Result:** 58/58 tests pass with 100% success rate in 7.63 seconds.
 
 ---
 
@@ -592,14 +719,15 @@ CampusIQ uses Pydantic V2's `pydantic-settings` (`backend/app/core/config.py`):
 
 ### Q20: What are future scalability enhancements for CampusIQ?
 **Answer:**  
-1. **Retrieval-Augmented Generation (RAG) with pgvector:** Integrating vector embeddings (via PostgreSQL's `pgvector` extension) to perform semantic vector search across unstructured college circulars, syllabus PDFs, and research papers.
-2. **Multi-Department & Multi-Campus Expansion:** Adding tenant-level partitioning in PostgreSQL to support all engineering departments (CSE, Mechanical, Electrical, Civil) and branch institutions under the Jaidev Education Society.
-3. **Multilingual Regional Support:** Implementing Marathi and Hindi natural language processing to assist prospective rural students across the Vidarbha region.
-4. **WhatsApp Business API Gateway:** Exposing webhook endpoints to allow students and parents to interact with CampusIQ directly over WhatsApp.
+1. **OCR Ingestion Pipeline:** Integrating Tesseract or EasyOCR for automated textual extraction from scanned notices, image circulars, and academic calendars.
+2. **Dense Semantic Search (pgvector):** Integrating vector embeddings (via PostgreSQL's `pgvector` extension) to complement the keyword/phrase retrieval engine for cross-lingual or semantic synonym queries.
+3. **Multi-Department & Multi-Campus Expansion:** Adding tenant-level partitioning in PostgreSQL to support all engineering departments (CSE, Mechanical, Electrical, Civil) and branch institutions under the Jaidev Education Society.
+4. **Multilingual Regional Support:** Implementing Marathi and Hindi natural language processing to assist prospective rural students across the Vidarbha region.
+5. **WhatsApp Business API Gateway:** Exposing webhook endpoints to allow students and parents to interact with CampusIQ directly over WhatsApp.
 
 ---
 
-## 9. Academic Mentorship & Project Credits
+## 10. Academic Mentorship & Project Credits
 
 - **Academic Institution:** JD College of Engineering and Management (JDCOEM), Nagpur
 - **Department:** Master of Computer Applications (MCA)
@@ -610,6 +738,6 @@ CampusIQ uses Pydantic V2's `pydantic-settings` (`backend/app/core/config.py`):
 
 ---
 
-## 10. License
+## 11. License
 
 This project is developed for educational and academic capstone evaluation under the MCA program at JD College of Engineering and Management, Nagpur. All rights reserved © 2025–2026.

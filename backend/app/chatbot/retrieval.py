@@ -4,7 +4,8 @@ Dynamically fetches authoritative institutional records from PostgreSQL to formu
 accurate, factual, and formatted responses.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+import re
+from typing import Any, Dict, List, Optional, Set, Tuple
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
@@ -17,6 +18,7 @@ from app.models.college import (
     Faculty,
     KnowledgeDocument,
 )
+from app.models.knowledge import KBChunk, KBDocument
 
 
 class KnowledgeRetriever:
@@ -392,3 +394,254 @@ class KnowledgeRetriever:
             "sources": [doc.source_reference or "College Handbook"],
             "suggestions": ["Attendance rules", "Anti-ragging policy", "NCC and NSS", "Admission guidelines"],
         }
+
+    # -------------------------------------------------------------------------
+    # Knowledge_Base Chunk-Level Multi-Strategy Retrieval
+    # -------------------------------------------------------------------------
+    STOPWORDS = {
+        "what", "is", "are", "the", "in", "of", "and", "for", "a", "an", "to", "how", "why",
+        "tell", "me", "about", "can", "you", "explain", "give", "details", "on", "with",
+        "please", "does", "do", "i", "my", "we", "our", "it", "its", "at", "by", "from",
+        "this", "that", "these", "those", "have", "has", "had", "will", "would", "which"
+    }
+
+    SUBJECT_DOC_MAP = {
+        "dbms": ["dbms", "database"],
+        "dsa": ["dsa", "data_structure", "algorithm"],
+        "os": ["operating_system", "os"],
+        "cloud": ["cloud", "cloud computing"],
+        "discrete_math": ["discrete", "graph_theory", "mathematics"],
+        "php": ["php", "web technology"],
+        "ai": ["ai", "artificial intelligence"],
+    }
+
+    def search_knowledge_chunks(
+        self,
+        query: str,
+        subject: Optional[str] = None,
+        semester: Optional[int] = None,
+        limit: int = 5,
+        min_score: float = 0.2,
+    ) -> List[Dict[str, Any]]:
+        """Multi-strategy retrieval over ingested knowledge base chunks.
+        
+        Applies exact phrase matching, heading matching, keyword frequency scoring,
+        and subject/semester domain boosting.
+        """
+        # 1. Normalize and extract query tokens
+        clean = re.sub(r"[^\w\s]", " ", query.lower()).strip()
+        tokens = [t for t in clean.split() if len(t) > 2 and t not in self.STOPWORDS]
+        if not tokens and not subject and not semester:
+            return []
+
+        # 2. Base query: only indexed documents
+        base_query = (
+            self.db.query(KBChunk, KBDocument)
+            .join(KBDocument, KBChunk.document_id == KBDocument.id)
+            .filter(KBDocument.ingestion_status == "indexed")
+        )
+
+        # 3. Subject-specific document filtering if specified
+        if subject and subject in self.SUBJECT_DOC_MAP:
+            patterns = self.SUBJECT_DOC_MAP[subject]
+            subj_conditions = [KBDocument.filename.ilike(f"%{p}%") for p in patterns]
+            base_query = base_query.filter(or_(*subj_conditions))
+
+        # 4. Semester-specific document filtering
+        if semester == 1:
+            base_query = base_query.filter(KBDocument.filename.ilike("%sem 1%"))
+        elif semester == 2:
+            base_query = base_query.filter(KBDocument.filename.ilike("%sem 2%"))
+
+        # Fetch candidate chunks
+        all_candidates = base_query.all()
+        if not all_candidates:
+            # Fall back to searching all indexed chunks if strict filter returned 0
+            all_candidates = (
+                self.db.query(KBChunk, KBDocument)
+                .join(KBDocument, KBChunk.document_id == KBDocument.id)
+                .filter(KBDocument.ingestion_status == "indexed")
+                .all()
+            )
+
+        scored_results: List[Dict[str, Any]] = []
+        clean_phrase = " ".join(tokens)
+
+        for chunk, doc in all_candidates:
+            c_text = (chunk.content or "").lower()
+            h_text = (chunk.section_heading or "").lower()
+            fn_text = doc.filename.lower()
+
+            score = 0.0
+            matched_terms = set()
+
+            # Exact phrase match boost
+            if clean_phrase and len(tokens) >= 2 and clean_phrase in c_text:
+                score += 4.0
+
+            # Heading exact or partial match
+            for t in tokens:
+                if t in h_text:
+                    score += 2.5
+                    matched_terms.add(t)
+
+            # Content keyword matches
+            for t in tokens:
+                count = c_text.count(t)
+                if count > 0:
+                    matched_terms.add(t)
+                    # logarithmic diminishing return on repeated words
+                    score += min(count * 0.4, 2.0)
+
+            # Subject alignment boost
+            if subject and any(p in fn_text for p in self.SUBJECT_DOC_MAP.get(subject, [])):
+                score += 2.0
+
+            # Semester alignment boost
+            if semester:
+                sem_str = f"sem {semester}"
+                if sem_str in fn_text or sem_str in c_text:
+                    score += 2.0
+
+            # Coverage ratio: what fraction of the search tokens appeared in this chunk?
+            if tokens:
+                coverage = len(matched_terms) / len(tokens)
+                score += coverage * 3.0
+
+            if score >= min_score and (matched_terms or score >= 1.5):
+                scored_results.append({
+                    "chunk_id": chunk.id,
+                    "doc_id": doc.id,
+                    "filename": doc.filename,
+                    "page_number": chunk.page_number,
+                    "section_heading": chunk.section_heading,
+                    "content": chunk.content,
+                    "score": round(score, 2),
+                    "citation": f"{doc.filename}, Page {chunk.page_number}",
+                })
+
+        # Sort descending by score
+        scored_results.sort(key=lambda x: x["score"], reverse=True)
+        return scored_results[:limit]
+
+    def get_kb_syllabus(
+        self, semester: Optional[int] = None, subject: Optional[str] = None, query: str = ""
+    ) -> Dict[str, Any]:
+        """Retrieve syllabus & curriculum structure from MCA syllabus documents."""
+        sem_target = semester or 1
+        chunks = self.search_knowledge_chunks(
+            query=query or f"syllabus scheme subjects semester {sem_target}",
+            semester=sem_target,
+            limit=4,
+        )
+
+        if not chunks:
+            # Fallback search without strict semester
+            chunks = self.search_knowledge_chunks(
+                query="mca syllabus scheme subjects credits",
+                limit=3,
+            )
+
+        sources = []
+        passages = []
+        for c in chunks:
+            if c["citation"] not in sources:
+                sources.append(c["citation"])
+            heading = f"### {c['section_heading']}\n" if c.get("section_heading") else ""
+            passages.append(f"{heading}{c['content']}")
+
+        combined_text = "\n\n".join(passages)
+        return {
+            "text": combined_text,
+            "sources": sources or [f"MCA SEM {sem_target} Syllabus Final.pdf"],
+            "chunks": chunks,
+            "semester": sem_target,
+        }
+
+    def get_kb_question_bank(
+        self, subject: Optional[str] = None, limit: int = 5
+    ) -> Dict[str, Any]:
+        """Retrieve authentic exam questions from ingested question banks."""
+        subj_filter = subject or "dbms"
+        chunks = self.search_knowledge_chunks(
+            query=f"question bank questions {subj_filter}",
+            subject=subj_filter,
+            limit=limit,
+        )
+
+        sources = []
+        passages = []
+        for c in chunks:
+            if c["citation"] not in sources:
+                sources.append(c["citation"])
+            heading = f"**{c['section_heading']}**\n" if c.get("section_heading") else ""
+            passages.append(f"{heading}{c['content']}")
+
+        return {
+            "text": "\n\n---\n\n".join(passages),
+            "sources": sources or ["Question Bank Catalog"],
+            "chunks": chunks,
+            "subject": subj_filter,
+        }
+
+    def get_kb_concept(
+        self, query: str, subject: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Retrieve detailed concept explanation from subject notes."""
+        chunks = self.search_knowledge_chunks(
+            query=query,
+            subject=subject,
+            limit=4,
+        )
+
+        sources = []
+        passages = []
+        for c in chunks:
+            if c["citation"] not in sources:
+                sources.append(c["citation"])
+            heading = f"### {c['section_heading']}\n" if c.get("section_heading") else ""
+            passages.append(f"{heading}{c['content']}")
+
+        return {
+            "text": "\n\n".join(passages),
+            "sources": sources,
+            "chunks": chunks,
+            "subject": subject,
+        }
+
+    def check_scanned_document_inquiry(self, query: str) -> Optional[Dict[str, Any]]:
+        """Transparently alert if user is asking about an unextracted scanned file."""
+        norm = query.lower()
+        scanned_docs = (
+            self.db.query(KBDocument)
+            .filter(KBDocument.ingestion_status == "scanned_ocr_required")
+            .all()
+        )
+
+        for doc in scanned_docs:
+            name_base = re.sub(r"[^\w]", " ", doc.filename.lower())
+            tokens = [t for t in name_base.split() if len(t) > 3]
+            # If query strongly matches a scanned file (e.g. academic calendar or php unit 2)
+            if any(t in norm for t in ["calendar", "academic calendar"]) and "calendar" in doc.filename.lower():
+                return {
+                    "text": (
+                        f"📄 **Notice on Document Availability:**\n\n"
+                        f"The file **`{doc.filename}`** in the institutional repository contains scanned image pages. "
+                        f"Text extraction is currently pending an OCR (Optical Character Recognition) pipeline pass. "
+                        f"Please refer to the physical notice board or contact the Academic Dean's office for the official calendar dates."
+                    ),
+                    "sources": [f"{doc.filename} (Scanned Image Document)"],
+                    "suggestions": ["MCA Syllabus", "Attendance Rules", "HOD MCA", "MCA Fees"],
+                }
+            elif "php unit 2" in norm and "php unit 2" in doc.filename.lower():
+                return {
+                    "text": (
+                        f"📄 **Notice on Document Availability:**\n\n"
+                        f"The document **`{doc.filename}`** (44 pages) consists of scanned image pages and requires OCR processing before text can be queried directly. "
+                        f"However, PHP exam questions are available in **`Question Bank PHP 2026.pdf`**."
+                    ),
+                    "sources": [f"{doc.filename} (Scanned Image Document)"],
+                    "suggestions": ["PHP Question Bank", "DBMS Notes", "DSA Notes", "MCA Syllabus"],
+                }
+        return None
+

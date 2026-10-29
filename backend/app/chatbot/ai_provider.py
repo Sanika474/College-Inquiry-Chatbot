@@ -5,7 +5,7 @@ strict timeout handling, and graceful offline degradation.
 """
 
 import logging
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 import httpx
 
 from app.core.config import settings
@@ -44,20 +44,28 @@ RULES FOR YOUR RESPONSES:
 """
 
 
+_SENTINEL = object()
+
+
 class AIProvider:
     """Manages grounded AI fallback requests via Google Gemini or OpenAI."""
 
     def __init__(
         self,
-        provider: Optional[str] = None,
-        api_key: Optional[str] = None,
-        model_name: Optional[str] = None,
-        timeout_seconds: Optional[float] = None,
+        provider: Any = _SENTINEL,
+        api_key: Any = _SENTINEL,
+        model_name: Any = _SENTINEL,
+        timeout_seconds: Any = _SENTINEL,
     ):
-        self.provider = (provider or settings.AI_PROVIDER or "").lower().strip()
-        self.api_key = api_key or settings.AI_API_KEY
-        self.model_name = model_name or settings.AI_MODEL_NAME
-        self.timeout = timeout_seconds or settings.AI_TIMEOUT_SECONDS
+        raw_prov = settings.AI_PROVIDER if provider is _SENTINEL else provider
+        self.provider = (raw_prov or "").lower().strip()
+        self.api_key = settings.AI_API_KEY if api_key is _SENTINEL else api_key
+        self.model_name = (
+            settings.AI_MODEL_NAME if model_name is _SENTINEL else (model_name or settings.AI_MODEL_NAME)
+        )
+        self.timeout = (
+            settings.AI_TIMEOUT_SECONDS if timeout_seconds is _SENTINEL else (timeout_seconds or settings.AI_TIMEOUT_SECONDS)
+        )
 
     def is_available(self) -> bool:
         """Check whether a supported AI provider and API key are configured."""

@@ -13,6 +13,7 @@ from app.models.college import (
 )
 from app.models.conversation import Conversation, Message
 from app.models.audit import AuditLog
+from app.models.knowledge import KBDocument, KBChunk, KBIngestionJob
 
 __all__ = [
     "Base",
@@ -30,4 +31,7 @@ __all__ = [
     "Conversation",
     "Message",
     "AuditLog",
+    "KBDocument",
+    "KBChunk",
+    "KBIngestionJob",
 ]

@@ -271,6 +271,9 @@ class ChatController {
     if (!text) return '';
     let html = this.escapeHtml(text);
 
+    // Inline Code `code`
+    html = html.replace(/`([^`]+)`/g, '<code style="background: rgba(15, 23, 42, 0.7); padding: 0.15rem 0.35rem; border-radius: 4px; font-size: 0.8rem; color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2);">$1</code>');
+
     // Bold **text**
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
@@ -280,14 +283,24 @@ class ChatController {
     // Links [text](url)
     html = html.replace(/\[(.*?)\]\((https?:\/\/.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; text-decoration: underline;">$1</a>');
 
-    // Bullet Lists
+    // Blockquotes > text
+    html = html.replace(/^&gt;\s*(.*)$/gm, '<blockquote style="border-left: 3px solid #38bdf8; padding-left: 0.75rem; margin: 0.5rem 0; color: var(--text-secondary); background: rgba(56, 189, 248, 0.05); padding-top: 0.25rem; padding-bottom: 0.25rem; border-radius: 0 4px 4px 0;">$1</blockquote>');
+
+    // Headings
+    html = html.replace(/^###\s*(.*)$/gm, '<h4 style="font-size: 0.95rem; font-weight: 700; color: #38bdf8; margin: 0.6rem 0 0.25rem;">$1</h4>');
+    html = html.replace(/^##\s*(.*)$/gm, '<h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0.75rem 0 0.4rem; letter-spacing: -0.01em;">$1</h3>');
+
+    // Horizontal Rule
+    html = html.replace(/^---$/gm, '<hr style="border: none; border-top: 1px solid var(--border-subtle); margin: 0.75rem 0;">');
+
+    // Bullet Lists & Paragraphs
     const lines = html.split('\n');
     let inList = false;
     let result = [];
 
     lines.forEach((line) => {
       const trimmed = line.trim();
-      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      if (trimmed.startsWith('- ') || trimmed.startsWith('• ') || trimmed.startsWith('* ')) {
         if (!inList) {
           result.push('<ul style="padding-left: 1.25rem; margin: 0.4rem 0;">');
           inList = true;

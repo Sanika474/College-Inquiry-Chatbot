@@ -47,7 +47,11 @@
         </p>
       </div>
 
-      <div style="display: flex; gap: 0.75rem;">
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <button id="btn-reindex-kb" class="btn btn-secondary" style="border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+          <span id="reindex-btn-text">Sync Knowledge Base</span>
+        </button>
         <button id="btn-export-csv" class="btn btn-primary">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export Users (CSV)
@@ -56,7 +60,7 @@
     </div>
 
     <!-- Metrics Cards -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem;">
       <div class="card">
         <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Users</div>
         <div id="stat-total-users" style="font-size: 2.2rem; font-weight: 800; color: #fff; margin: 0.25rem 0;">--</div>
@@ -68,14 +72,58 @@
         <div style="font-size: 0.78rem; color: var(--text-muted);">Enrolled & Prospective</div>
       </div>
       <div class="card">
-        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Inquiries</div>
-        <div id="stat-messages" style="font-size: 2.2rem; font-weight: 800; color: var(--accent-purple); margin: 0.25rem 0;">--</div>
-        <div style="font-size: 0.78rem; color: var(--text-muted);">Message Turns Logged</div>
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">KB Documents</div>
+        <div id="stat-kb-docs" style="font-size: 2.2rem; font-weight: 800; color: #38bdf8; margin: 0.25rem 0;">--</div>
+        <div style="font-size: 0.78rem; color: var(--text-muted);"><span id="stat-kb-indexed">--</span> Indexed • <span id="stat-kb-scanned" style="color: #fbbf24;">--</span> Scanned</div>
+      </div>
+      <div class="card">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Indexed Chunks</div>
+        <div id="stat-kb-chunks" style="font-size: 2.2rem; font-weight: 800; color: #34d399; margin: 0.25rem 0;">--</div>
+        <div style="font-size: 0.78rem; color: var(--text-muted);"><span id="stat-kb-tokens">--</span> Tokens Indexed</div>
       </div>
       <div class="card">
         <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Chat Sessions</div>
         <div id="stat-conversations" style="font-size: 2.2rem; font-weight: 800; color: var(--accent-orange); margin: 0.25rem 0;">--</div>
-        <div style="font-size: 0.78rem; color: var(--text-muted);">Unique Sessions</div>
+        <div style="font-size: 0.78rem; color: var(--text-muted);">Unique Inquiries</div>
+      </div>
+    </div>
+
+    <!-- Knowledge Base Documents Management -->
+    <div class="card" style="margin-bottom: 2.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.3rem; font-weight: 700; color: #fff;">Knowledge Base Document Repository</h2>
+          <p style="font-size: 0.82rem; color: var(--text-muted);">Ingested PDF, DOCX, and syllabus documents from the verified <code>Knowledge_Base</code> store.</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <select id="filter-kb-status" class="form-control" style="font-size: 0.85rem; padding: 0.4rem 0.75rem; background: rgba(15, 23, 42, 0.8);">
+            <option value="">All Statuses</option>
+            <option value="indexed">Indexed (Active)</option>
+            <option value="scanned_ocr_required">Scanned (OCR Req)</option>
+            <option value="error">Errors</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="campusiq-table">
+          <thead>
+            <tr>
+              <th>Document Name</th>
+              <th>Type</th>
+              <th>Pages</th>
+              <th>Chunks</th>
+              <th>Category</th>
+              <th>Status</th>
+              <th>Checksum (SHA-256)</th>
+            </tr>
+          </thead>
+          <tbody id="kb-table-body">
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading knowledge base inventory...</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -169,14 +217,53 @@
   <script src="assets/js/auth.js"></script>
   <script>
     let allUsers = [];
+    let allKBDocs = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
       // Guard route: Requires Admin Role
       await window.auth.requireAdmin();
 
       loadDashboardMetrics();
+      loadKnowledgeStats();
+      loadKnowledgeDocuments();
       loadUsers();
       loadAuditLogs();
+
+      // Knowledge Base filter
+      const kbFilter = document.getElementById('filter-kb-status');
+      if (kbFilter) {
+        kbFilter.addEventListener('change', (e) => {
+          const val = e.target.value;
+          const filtered = val ? allKBDocs.filter(d => d.ingestion_status === val) : allKBDocs;
+          renderKnowledgeDocuments(filtered);
+        });
+      }
+
+      // Sync / Reindex Knowledge Base
+      const reindexBtn = document.getElementById('btn-reindex-kb');
+      if (reindexBtn) {
+        reindexBtn.addEventListener('click', async () => {
+          const btnText = document.getElementById('reindex-btn-text');
+          const originalText = btnText.textContent;
+          try {
+            btnText.textContent = 'Syncing...';
+            reindexBtn.disabled = true;
+            const res = await window.api.post('/knowledge/reindex');
+            if (res.success) {
+              window.showToast(`KB Sync complete: ${res.data.total_files} total (${res.data.processed_files} processed, ${res.data.skipped_files} skipped)`, 'success');
+              await loadKnowledgeStats();
+              await loadKnowledgeDocuments();
+            } else {
+              window.showToast('KB Sync failed: ' + (res.error || 'Unknown error'), 'error');
+            }
+          } catch (err) {
+            window.showToast('Error syncing KB: ' + err.message, 'error');
+          } finally {
+            btnText.textContent = originalText;
+            reindexBtn.disabled = false;
+          }
+        });
+      }
 
       // Search filter
       const searchInput = document.getElementById('search-users');
@@ -220,9 +307,66 @@
       if (res.success && res.data) {
         document.getElementById('stat-total-users').textContent = res.data.total_users;
         document.getElementById('stat-students').textContent = res.data.student_users;
-        document.getElementById('stat-messages').textContent = res.data.total_messages;
         document.getElementById('stat-conversations').textContent = res.data.total_conversations;
       }
+    }
+
+    async function loadKnowledgeStats() {
+      const res = await window.api.get('/knowledge/stats');
+      if (res.success && res.data) {
+        document.getElementById('stat-kb-docs').textContent = res.data.total_documents;
+        document.getElementById('stat-kb-indexed').textContent = res.data.indexed_documents;
+        document.getElementById('stat-kb-scanned').textContent = res.data.scanned_documents;
+        document.getElementById('stat-kb-chunks').textContent = res.data.total_chunks;
+        document.getElementById('stat-kb-tokens').textContent = (res.data.total_tokens || 0).toLocaleString();
+      }
+    }
+
+    async function loadKnowledgeDocuments() {
+      const res = await window.api.get('/knowledge/documents');
+      const tbody = document.getElementById('kb-table-body');
+      if (res.success && Array.isArray(res.data)) {
+        allKBDocs = res.data;
+        renderKnowledgeDocuments(allKBDocs);
+      } else {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Failed to load knowledge documents.</td></tr>`;
+      }
+    }
+
+    function renderKnowledgeDocuments(docs) {
+      const tbody = document.getElementById('kb-table-body');
+      if (!docs || docs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No documents matching filter.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = docs.map(d => {
+        let statusBadge = '<span class="badge badge-autonomous" style="background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3);">Indexed</span>';
+        if (d.ingestion_status === 'scanned_ocr_required') {
+          statusBadge = '<span class="badge" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3);">Scanned (OCR Req)</span>';
+        } else if (d.ingestion_status === 'error') {
+          statusBadge = '<span class="badge" style="background: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3);">Error</span>';
+        }
+
+        const sizeKb = Math.round((d.file_size_bytes || 0) / 1024);
+        const checksumShort = d.checksum ? d.checksum.slice(0, 12) + '...' : 'N/A';
+
+        return `
+          <tr>
+            <td style="font-weight: 600; color: #fff;">
+              <span style="display: flex; align-items: center; gap: 0.4rem;">
+                📄 ${escapeHtml(d.filename)}
+              </span>
+            </td>
+            <td><span class="badge badge-mca">${escapeHtml(d.file_type.toUpperCase())} (${sizeKb} KB)</span></td>
+            <td>${d.page_count}</td>
+            <td style="font-weight: 700; color: #38bdf8;">${d.chunk_count}</td>
+            <td style="font-size: 0.82rem; color: var(--text-secondary); text-transform: capitalize;">${escapeHtml(d.category.replace('_', ' '))}</td>
+            <td>${statusBadge}</td>
+            <td><code style="font-size: 0.75rem; color: var(--text-muted);">${checksumShort}</code></td>
+          </tr>
+        `;
+      }).join('');
     }
 
     async function loadUsers() {
