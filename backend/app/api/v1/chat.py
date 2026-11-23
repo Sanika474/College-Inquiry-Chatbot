@@ -114,6 +114,25 @@ def get_conversation_history(
     )
 
 
+@router.delete("/conversations", status_code=status.HTTP_204_NO_CONTENT, summary="Delete all conversations")
+def delete_all_conversations(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    """Delete all conversations for the current user or guest session."""
+    query = db.query(Conversation)
+    if current_user:
+        query = query.filter(Conversation.user_id == current_user.id)
+    else:
+        query = query.filter(Conversation.user_id.is_(None))
+
+    conversations = query.all()
+    for c in conversations:
+        db.delete(c)
+    db.commit()
+    return None
+
+
 @router.delete("/conversations/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete conversation")
 def delete_conversation(
     conversation_id: int,

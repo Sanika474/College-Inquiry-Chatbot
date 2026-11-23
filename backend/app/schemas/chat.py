@@ -1,7 +1,7 @@
 """Pydantic Request and Response Schemas for CampusIQ Chat API."""
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -12,15 +12,28 @@ class ChatMessageRequest(BaseModel):
     conversation_id: Optional[int] = Field(None, description="Existing conversation session ID")
 
 
+class DocumentLinkItem(BaseModel):
+    """Clickable document resource reference."""
+
+    label: str
+    url: str
+    doc_id: Optional[int] = None
+    file_type: Optional[str] = "pdf"
+
+
 class ChatMessageResponse(BaseModel):
     """Response payload containing bot reply and metadata."""
 
     conversation_id: int
     message: str
+    answer: Optional[str] = None
     intent: Optional[str] = None
     category: Optional[str] = None
+    format: Optional[str] = "text"
     engine: str
     confidence: float
+    items: List[Dict[str, Any]] = []
+    links: List[DocumentLinkItem] = []
     sources: List[str] = []
     suggestions: List[str] = []
     created_at: datetime

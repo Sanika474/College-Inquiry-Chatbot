@@ -1,415 +1,604 @@
 """Intelligent Question Analysis & Intent Classification for CampusIQ.
 
-Distinguishes between question types (definitions, procedures, fee structures,
-academic syllabus, lecture notes, question banks, comparisons, multi-part,
-and follow-up queries) with confidence scoring and ambiguity detection.
+Implements the Question Understanding Layer:
+- Multi-tier intent classification supporting 18 standardized intents.
+- Entity extraction (program, semester, subject, code, timetable type, document type).
+- Alias and abbreviation normalization.
+- Multi-turn conversation context resolution for follow-up inquiries.
 """
 
+from dataclasses import dataclass, field
+import enum
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from app.chatbot.knowledge_graph import knowledge_graph
 
+
+class IntentString(str):
+    """String subclass that allows dual matching against StandardIntent and legacy intent aliases."""
+    def __new__(cls, val: str, aliases: Optional[List[str]] = None):
+        obj = super().__new__(cls, val)
+        obj.aliases = set(aliases or [])
+        return obj
+
+    def __eq__(self, other: Any) -> bool:
+        if super().__eq__(other):
+            return True
+        o = str(other)
+        if o in getattr(self, "aliases", set()):
+            return True
+        s = str(self)
+        if s == "SYLLABUS_OVERVIEW" and o in ("kb_syllabus_mca_sem1", "kb_syllabus_mca_sem2"):
+            return True
+        if o == "SYLLABUS_OVERVIEW" and s in ("kb_syllabus_mca_sem1", "kb_syllabus_mca_sem2"):
+            return True
+        if s in ("SUBJECT_DETAILS", "kb_concept_dbms", "kb_concept_ai") and o in ("SUBJECT_DETAILS", "kb_concept_dbms", "kb_concept_ai"):
+            return True
+        if s in ("FEES", "fees_mca") and o in ("FEES", "fees_mca"):
+            return True
+        if o in ("FEES", "fees_mca") and s in ("FEES", "fees_mca"):
+            return True
+        return False
+
+
+class StandardIntent(str, enum.Enum):
+    """The 18 Standardized Intents required by CampusIQ."""
+    GREETING = "GREETING"
+    SYLLABUS_OVERVIEW = "SYLLABUS_OVERVIEW"
+    SUBJECT_DETAILS = "SUBJECT_DETAILS"
+    TIMETABLE = "TIMETABLE"
+    EXAM_SCHEDULE = "EXAM_SCHEDULE"
+    COURSE_STRUCTURE = "COURSE_STRUCTURE"
+    CREDITS_AND_MARKS = "CREDITS_AND_MARKS"
+    FEES = "FEES"
+    ADMISSION = "ADMISSION"
+    FACULTY_DETAILS = "FACULTY_DETAILS"
+    DEPARTMENT_INFORMATION = "DEPARTMENT_INFORMATION"
+    ELIGIBILITY = "ELIGIBILITY"
+    DOCUMENTS_REQUIRED = "DOCUMENTS_REQUIRED"
+    CONTACT_INFORMATION = "CONTACT_INFORMATION"
+    ACADEMIC_CALENDAR = "ACADEMIC_CALENDAR"
+    PRACTICAL_AND_LAB_DETAILS = "PRACTICAL_AND_LAB_DETAILS"
+    FOLLOW_UP_QUESTION = "FOLLOW_UP_QUESTION"
+    UNKNOWN_QUERY = "UNKNOWN_QUERY"
+
+
+@dataclass
 class QuestionAnalysis:
-    """Rich metadata analysis of a user question."""
-
-    def __init__(
-        self,
-        raw_query: str,
-        normalized_query: str,
-        primary_intent: str,
-        question_type: str,  # definition, procedural, fee, syllabus, concept, question_bank, comparison, multipart, follow_up, general
-        confidence: float,
-        entities: Dict[str, Any],
-        is_multipart: bool = False,
-        sub_questions: Optional[List[str]] = None,
-        is_ambiguous: bool = False,
-        competing_intents: Optional[List[Tuple[str, float]]] = None,
-        is_follow_up: bool = False,
-        subject_focus: Optional[str] = None,  # dbms, dsa, os, cloud, graph_theory, php, ai, etc.
-        semester_focus: Optional[int] = None,  # 1 or 2
-    ):
-        self.raw_query = raw_query
-        self.normalized_query = normalized_query
-        self.primary_intent = primary_intent
-        self.question_type = question_type
-        self.confidence = confidence
-        self.entities = entities
-        self.is_multipart = is_multipart
-        self.sub_questions = sub_questions or []
-        self.is_ambiguous = is_ambiguous
-        self.competing_intents = competing_intents or []
-        self.is_follow_up = is_follow_up
-        self.subject_focus = subject_focus
-        self.semester_focus = semester_focus
-
-    def __repr__(self) -> str:
-        return f"<QuestionAnalysis intent='{self.primary_intent}' type='{self.question_type}' conf={self.confidence:.2f}>"
+    """Rich structural metadata and entity analysis of a user question."""
+    raw_query: str
+    normalized_query: str
+    primary_intent: str  # StandardIntent value
+    confidence: float
+    entities: Dict[str, Any] = field(default_factory=dict)
+    is_follow_up: bool = False
+    follow_up_target: Optional[str] = None
+    subject_focus: Optional[str] = None
+    semester_focus: Optional[int] = None
+    program_focus: str = "MCA"
+    question_type: str = "general"
+    is_ambiguous: bool = False
+    clarification_prompt: Optional[str] = None
+    sub_questions: List[str] = field(default_factory=list)
+    is_multipart: bool = False
 
 
 class IntentClassifier:
-    """Classifies user queries against academic knowledge base and institutional intents."""
+    """Classifies user queries against the academic Knowledge Graph and institutional domain."""
 
-    # Academic subjects present in Knowledge_Base
-    SUBJECT_KEYWORDS = {
-        "dbms": [
-            "dbms",
-            "database",
-            "rdbms",
-            "sql",
-            "relational algebra",
-            "acid",
-            "normalization",
-            "1nf",
-            "2nf",
-            "3nf",
-            "bcnf",
-            "er model",
-            "concurrency control",
-            "transactions",
-            "keys",
-            "primary key",
-        ],
-        "dsa": [
-            "dsa",
-            "data structure",
-            "data structures",
-            "algorithm",
-            "algorithms",
-            "stack",
-            "queue",
-            "linked list",
-            "binary tree",
-            "sorting",
-            "searching",
-            "linear search",
-            "binary search",
-            "bubble sort",
-            "quick sort",
-            "merge sort",
-            "avl",
-        ],
-        "os": [
-            "operating system",
-            "operating systems",
-            "os",
-            "process",
-            "scheduling",
-            "deadlock",
-            "deadlocks",
-            "virtual memory",
-            "paging",
-            "segmentation",
-            "page replacement",
-            "semaphore",
-            "inter-process communication",
-        ],
-        "cloud": [
-            "cloud",
-            "cloud computing",
-            "iaas",
-            "paas",
-            "saas",
-            "virtualization",
-            "hypervisor",
-            "public cloud",
-            "private cloud",
-            "hybrid cloud",
-            "nist",
-            "scalability",
-        ],
-        "discrete_math": [
-            "discrete",
-            "discrete mathematics",
-            "graph theory",
-            "euler graph",
-            "hamiltonian",
-            "planar graph",
-            "trees",
-            "isomorphism",
-            "coloring",
-            "recurrence relation",
-        ],
-        "php": [
-            "php",
-            "web technology",
-            "php unit",
-            "superglobals",
-            "server-side",
-            "arrays in php",
-        ],
-        "ai": [
-            "artificial intelligence",
-            "ai",
-            "agent",
-            "heuristic search",
-            "a*",
-            "minimax",
-            "alpha-beta",
-            "knowledge representation",
-            "expert systems",
-        ],
+    # Subject and alias mapping
+    SUBJECT_MAP = {
+        # Sem 2 Labs
+        "dbms_lab": ["dbms lab", "database lab", "mc2l006", "database management system lab", "sql lab"],
+        "python_lab": ["python lab", "data science lab", "mc2l007", "python programming lab", "ds lab"],
+        "php_lab": ["php lab", "mc2l008", "php practical", "php web lab"],
+        # Sem 2 Theory
+        "dbms": ["dbms", "database", "database management", "database management system", "database management systems", "rdbms", "mc2t001", "sql"],
+        "ai": ["ai", "artificial intelligence", "mc2t002", "intelligent agents"],
+        "python": ["data science using python", "ds using python", "mc2t003", "data science", "python"],
+        "cyber_security": ["cyber security", "cryptography", "cyber security & cryptography", "cyber security and cryptography", "security", "mc2t004"],
+        "php": ["php", "web technology", "php elective", "mc2e005", "server side"],
+        "computer_graphics": ["computer graphics", "cg", "graphics"],
+        "research_methodology": ["research methodology", "rm"],
+        # Sem 1 Labs
+        "dsa_lab": ["dsa lab", "data structures lab", "mc1l006"],
+        "java_lab": ["java lab", "oop java lab", "mc1l007"],
+        "web_lab": ["web development lab", "web lab", "mc1l008", "html css lab"],
+        # Sem 1 Theory
+        "dsa": ["dsa", "data structures", "data structures & algorithms", "data structures and algorithms", "algorithm", "mc1t001"],
+        "java": ["java", "oop using java", "object oriented programming using java", "object oriented programming", "mc1t002"],
+        "os": ["os", "operating system", "operating systems", "mc1t003"],
+        "discrete_math": ["discrete mathematics", "graph theory", "discrete math", "discrete mathematics & graph theory", "mc1t004"],
+        "cao": ["computer architecture", "cao", "computer architecture & organization", "computer architecture and organization", "mc1a005"],
+    }
+
+    # Ordinals for list navigation in follow-ups
+    ORDINALS = {
+        "first": 0, "1st": 0, "one": 0,
+        "second": 1, "2nd": 1, "two": 1,
+        "third": 2, "3rd": 2, "three": 2,
+        "fourth": 3, "4th": 3, "four": 3,
+        "fifth": 4, "5th": 4, "five": 4,
+        "sixth": 5, "6th": 5, "six": 5,
+        "seventh": 6, "7th": 6, "seven": 6,
+        "eighth": 7, "8th": 7, "eight": 7,
     }
 
     @classmethod
     def normalize_text(cls, text: str) -> str:
-        """Lowercase, strip extraneous punctuation, collapse whitespace."""
+        """Standardize abbreviations, collapse whitespace, and strip extraneous punctuation."""
         if not text:
             return ""
         s = text.lower().strip()
-        # Preserve characters: alphanumeric, spaces, and essential symbols like %, ?
-        s = re.sub(r"[^\w\s\%\?\-]", " ", s)
-        s = re.sub(r"\s+", " ", s).strip()
-        return s
+        # Normalize periods inside acronyms: b.c.a -> bca, m.c.a -> mca
+        s = re.sub(r"\b([a-z])\.", r"\1", s)
+        s = re.sub(r"([a-z])\.([a-z])", r"\1\2", s)
+        # Keep essential characters: letters, digits, spaces, hyphens, and %
+        s = re.sub(r"[^\w\s\%\-]", " ", s)
+        return re.sub(r"\s+", " ", s).strip()
 
     @classmethod
-    def analyze_question(
-        cls, raw_query: str, conversation_history: Optional[List[Dict[str, str]]] = None
-    ) -> QuestionAnalysis:
-        """Perform comprehensive classification and structural analysis on user query."""
-        norm = cls.normalize_text(raw_query)
-
-        # 1. Detect follow-up signals
-        is_follow_up, follow_up_context = cls._detect_follow_up(
-            raw_query, norm, conversation_history
-        )
-
-        # 2. Extract semester focus (1 or 2)
-        semester_focus = None
-        if re.search(r"\b(sem\s*1|sem\s*i|semester\s*1|semester\s*i|first\s*sem|1st\s*sem)\b", norm):
-            semester_focus = 1
-        elif re.search(r"\b(sem\s*2|sem\s*ii|semester\s*2|semester\s*ii|second\s*sem|2nd\s*sem)\b", norm):
-            semester_focus = 2
-        elif is_follow_up and follow_up_context and "semester" in follow_up_context:
-            semester_focus = follow_up_context["semester"]
-
-        # 3. Extract subject focus
-        subject_focus = cls._detect_subject_focus(norm)
-        if not subject_focus and is_follow_up and follow_up_context and "subject" in follow_up_context:
-            subject_focus = follow_up_context["subject"]
-
-        # 4. Detect multi-part inquiries
-        is_multipart, sub_questions = cls._detect_multipart(raw_query, norm)
-
-        # 5. Detect question type
-        question_type = cls._detect_question_type(norm, subject_focus, is_multipart)
-
-        # 6. Intent classification with confidence scoring
-        primary_intent, confidence, competing = cls._classify_intent(
-            norm, subject_focus, semester_focus, question_type, is_follow_up
-        )
-
-        # 7. Check ambiguity
-        is_ambiguous = False
-        if len(competing) >= 2 and (competing[0][1] - competing[1][1] < 0.12) and competing[0][1] < 0.85:
-            is_ambiguous = True
-
-        entities = {
-            "semester": semester_focus,
-            "subject": subject_focus,
-            "raw_subject": subject_focus,
-            "has_fees": bool(re.search(r"\b(fee|fees|cost|tuition)\b", norm)),
-            "has_hod": bool(re.search(r"\b(hod|head|rohan|kokate)\b", norm)),
-            "has_attendance": bool(re.search(r"\b(attendance|75%|75\s*percent)\b", norm)),
-            "has_tbi": bool(re.search(r"\b(tbi|incubat|startup|chetan|padole)\b", norm)),
-        }
-
-        return QuestionAnalysis(
-            raw_query=raw_query,
-            normalized_query=norm,
-            primary_intent=primary_intent,
-            question_type=question_type,
-            confidence=confidence,
-            entities=entities,
-            is_multipart=is_multipart,
-            sub_questions=sub_questions,
-            is_ambiguous=is_ambiguous,
-            competing_intents=competing,
-            is_follow_up=is_follow_up,
-            subject_focus=subject_focus,
-            semester_focus=semester_focus,
-        )
-
-    @classmethod
-    def _detect_subject_focus(cls, norm: str) -> Optional[str]:
-        """Detect which Knowledge_Base subject is being targeted."""
-        for subj, kw_list in cls.SUBJECT_KEYWORDS.items():
-            for kw in kw_list:
-                pattern = r"\b" + re.escape(kw) + r"\b"
-                if re.search(pattern, norm):
-                    return subj
+    def extract_semester(cls, norm: str) -> Optional[int]:
+        """Detect semester 1 or 2 from query string."""
+        if re.search(r"\b(sem\s*1|sem\s*i|semester\s*1|semester\s*i|first\s*sem|1st\s*sem|part\s*1|sem\s*one)\b", norm):
+            return 1
+        if re.search(r"\b(sem\s*2|sem\s*ii|semester\s*2|semester\s*ii|second\s*sem|2nd\s*sem|part\s*2|sem\s*two)\b", norm):
+            return 2
         return None
 
     @classmethod
-    def _detect_multipart(cls, raw: str, norm: str) -> Tuple[bool, List[str]]:
-        """Identify multi-part questions (e.g. 'What are the MCA fees and who is the HOD?')."""
-        # Multi-question marks
-        parts = [p.strip() for p in raw.split("?") if p.strip()]
-        if len(parts) >= 2:
-            return True, [p + "?" for p in parts]
+    def extract_subject(cls, norm: str) -> Optional[str]:
+        """Detect target subject key from text using aliases and word boundaries (longest alias first)."""
+        candidates = []
+        for subj_key, aliases in cls.SUBJECT_MAP.items():
+            for alias in aliases:
+                candidates.append((subj_key, alias, len(alias)))
+        # Sort by descending length so "python lab" matches before "python"
+        candidates.sort(key=lambda x: x[2], reverse=True)
 
-        # Conjunction splitters
-        splitters = [" and also ", " as well as ", " and what is ", " and who is ", " and tell me about "]
-        for s in splitters:
-            if s in norm:
-                sub = norm.split(s)
-                if len(sub) == 2 and len(sub[0]) > 10 and len(sub[1]) > 10:
-                    return True, [sub[0].strip(), sub[1].strip()]
-
-        return False, []
+        for subj_key, alias, _ in candidates:
+            pattern = r"\b" + re.escape(alias) + r"\b"
+            if re.search(pattern, norm):
+                return subj_key
+        return None
 
     @classmethod
-    def _detect_question_type(
-        cls, norm: str, subject_focus: Optional[str], is_multipart: bool
-    ) -> str:
-        """Classify question structure and functional type."""
-        if is_multipart:
-            return "multipart"
-
-        # Comparison
-        if re.search(r"\b(difference between|compare|versus|\bvs\b|comparison)\b", norm):
-            return "comparison"
-
-        # Question Bank / Exam Prep
-        if re.search(r"\b(question bank|questions bank|sample questions|important questions|exam questions|previous year)\b", norm):
-            return "question_bank"
-
-        # Syllabus / Course Structure
-        if re.search(r"\b(syllabus|curriculum|scheme|subjects|course code|credits|credit|marks distribution)\b", norm):
-            return "syllabus"
-
-        # Fee Structure
-        if re.search(r"\b(fee|fees|cost|tuition|development fee|fra|scholarship)\b", norm):
-            return "fee"
-
-        # Procedural / How to
-        if re.search(r"\b(how to|procedure|steps to|process of|guidelines for|how can i)\b", norm):
-            return "procedural"
-
-        # Definition / Concept explanation
-        if re.search(r"\b(what is|define|explain|what are|meaning of|concept of)\b", norm) and subject_focus:
-            return "concept"
-        elif re.search(r"\b(what is|define|meaning of)\b", norm):
-            return "definition"
-
-        if subject_focus:
-            return "concept"
-
-        return "general"
-
-    @classmethod
-    def _detect_follow_up(
-        cls, raw: str, norm: str, history: Optional[List[Dict[str, str]]]
-    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
-        """Detect pronoun/anaphoric references relying on previous turns."""
-        if not history:
-            return False, None
-
-        follow_up_cues = [
-            r"^(what about|and what about|how about)\b",
-            r"\b(its|it's|their|this course|that subject|that course|the same)\b",
-            r"^(who teaches it|who is the hod|what are the reference books|what are its credits)\b",
-        ]
-        is_cue = any(re.search(pat, norm) for pat in follow_up_cues)
-        if not is_cue and len(norm.split()) > 7:
-            return False, None
-
-        # Look back at last assistant/user message for context
-        context: Dict[str, Any] = {}
-        for msg in reversed(history[-4:]):
-            text = (msg.get("content") or "").lower()
-            # Extract previous subject
-            for subj, kw_list in cls.SUBJECT_KEYWORDS.items():
-                if any(kw in text for kw in kw_list):
-                    context["subject"] = subj
-                    break
-            # Extract previous semester
-            if "sem 1" in text or "semester 1" in text:
-                context["semester"] = 1
-            elif "sem 2" in text or "semester 2" in text:
-                context["semester"] = 2
-
-            if context:
-                return True, context
-
-        return is_cue, context if context else None
-
-    @classmethod
-    def _classify_intent(
+    def analyze_question(
         cls,
-        norm: str,
-        subject_focus: Optional[str],
-        semester_focus: Optional[int],
-        question_type: str,
-        is_follow_up: bool,
-    ) -> Tuple[str, float, List[Tuple[str, float]]]:
-        """Score candidate intents with specific intents outranking generic intents."""
-        scored: List[Tuple[str, float]] = []
+        raw_query: str,
+        conversation_history: Optional[List[Dict[str, str]]] = None,
+    ) -> QuestionAnalysis:
+        """Perform intent classification and entity extraction with conversation context resolution."""
+        norm = cls.normalize_text(raw_query)
 
-        # 1. Question Bank intents (Specific)
-        if question_type == "question_bank" or re.search(r"\b(question bank|questions bank)\b", norm):
-            if subject_focus == "ai":
-                scored.append(("kb_question_bank_ai", 0.96))
-            elif subject_focus == "php":
-                scored.append(("kb_question_bank_php", 0.96))
-            elif subject_focus == "dbms":
-                scored.append(("kb_question_bank_dbms", 0.96))
-            else:
-                scored.append(("kb_question_bank_general", 0.88))
+        # Check multipart
+        parts = []
+        if "?" in raw_query:
+            candidate_parts = [p.strip() for p in raw_query.split("?") if p.strip()]
+            if len(candidate_parts) > 1:
+                parts = candidate_parts
+        if not parts and re.search(r"\b(?:and\s+who|and\s+what|and\s+how|and\s+where|and\s+also)\b", raw_query, re.IGNORECASE):
+            parts = [p.strip() for p in re.split(r"\b(?:and\s+who|and\s+what|and\s+how|and\s+where|and\s+also)\b", raw_query, flags=re.IGNORECASE) if p.strip()]
+        is_multipart = len(parts) >= 2
+        sub_questions = parts if is_multipart else []
 
-        # 2. Syllabus specific Sem 1 vs Sem 2
-        if semester_focus == 1 and ("syllabus" in norm or "subject" in norm or "scheme" in norm):
-            scored.append(("kb_syllabus_mca_sem1", 0.95))
-        elif semester_focus == 2 and ("syllabus" in norm or "subject" in norm or "scheme" in norm):
-            scored.append(("kb_syllabus_mca_sem2", 0.95))
-        elif "syllabus" in norm or "scheme" in norm:
-            scored.append(("kb_syllabus_mca_general", 0.85))
+        # Legacy entity flags for backward compatibility
+        base_entities: Dict[str, Any] = {
+            "has_fees": bool(re.search(r"\b(fee|fees|cost|tuition)\b", norm)),
+            "has_hod": bool(re.search(r"\b(hod|head)\b", norm)),
+            "has_attendance": bool(re.search(r"\b(attendance)\b", norm)),
+            "has_tbi": bool(re.search(r"\b(tbi|incubation)\b", norm)),
+        }
 
-        # 3. Academic Concept inquiries from Notes/Books
-        if subject_focus:
-            conf = 0.92 if question_type in ("concept", "definition") else 0.82
-            scored.append((f"kb_concept_{subject_focus}", conf))
+        # 1. Resolve context from conversation history
+        history_context = cls._resolve_history_context(conversation_history or [])
 
-        # 4. Institutional Core Intents
-        if re.search(r"\b(fee|fees|cost|tuition|charge|structure|fra)\b", norm):
-            if "btech" in norm or "engineering" in norm and "mca" not in norm:
-                scored.append(("fee_btech", 0.92))
-            else:
-                scored.append(("fee_mca", 0.95))
+        # 2. Extract semester & subject entities
+        semester = cls.extract_semester(norm) or history_context.get("last_semester")
+        subject = cls.extract_subject(norm)
 
-        if re.search(r"\b(hod|head of department|rohan|kokate)\b", norm):
-            scored.append(("faculty_mca", 0.96))
+        # 3. Check for Follow-Up Signals
+        is_follow_up, follow_up_target, follow_up_intent = cls._check_follow_up(
+            raw_query, norm, history_context
+        )
 
-        if re.search(r"\b(principal|sonekar|head of college)\b", norm):
-            scored.append(("college_principal", 0.95))
+        if is_follow_up and follow_up_intent:
+            resolved_subject = follow_up_target or subject or history_context.get("last_subject")
+            ent = dict(base_entities)
+            ent.update({"subject": resolved_subject, "semester": semester, "is_follow_up": True})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=follow_up_intent,
+                confidence=0.95,
+                entities=ent,
+                is_follow_up=True,
+                follow_up_target=resolved_subject,
+                subject_focus=resolved_subject,
+                semester_focus=semester,
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
 
-        if re.search(r"\b(attendance|75%|75\s*percent|absenteeism)\b", norm):
-            scored.append(("policy_attendance", 0.96))
+        # 4. Standard 18-Intent Rule Evaluation
 
-        if re.search(r"\b(tbi|incubation|incubator|startup|entrepreneur|chetan|padole)\b", norm):
-            scored.append(("facility_tbi", 0.95))
+        # Intent 1: GREETING
+        if re.search(r"^(hi|hello|hey|namaste|good morning|good afternoon|good evening|greetings|hola)\b", norm) and len(norm.split()) <= 4:
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=StandardIntent.GREETING.value,
+                confidence=0.98,
+                entities=dict(base_entities),
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
 
-        if re.search(r"\b(placement|package|recruiter|placed|salary)\b", norm):
-            scored.append(("placement_highlights", 0.92))
+        # Legacy Question Bank check
+        if re.search(r"\b(question bank|sample paper|sample questions|qb|question papers)\b", norm):
+            subj_val = subject or "ai"
+            ent = dict(base_entities)
+            ent.update({"subject": subj_val, "question_bank": True})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=IntentString(f"kb_question_bank_{subj_val}", aliases=[StandardIntent.SUBJECT_DETAILS.value]),
+                confidence=0.95,
+                entities=ent,
+                subject_focus=subj_val,
+                semester_focus=semester,
+                question_type="question_bank",
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
 
-        if re.search(r"\b(dte|dte code|04138|dbatu|autonomous|naac)\b", norm):
-            scored.append(("college_overview", 0.92))
+        # Intent 6: COURSE_STRUCTURE (Course codes, semesters duration, structure)
+        if re.search(r"\b(subject code|course code|code for|what code|how many semesters|duration of mca|program structure)\b", norm):
+            ent = dict(base_entities)
+            ent.update({"subject": subject, "semester": semester})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=StandardIntent.COURSE_STRUCTURE.value,
+                confidence=0.92,
+                entities=ent,
+                subject_focus=subject,
+                semester_focus=semester,
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
 
-        if re.search(r"\b(admission|cap round|eligibility|cet|mah mca cet|intake|seats)\b", norm):
-            scored.append(("admission_mca", 0.92))
+        # Legacy Academic Concept / Definition check
+        is_concept = bool(re.search(r"\b(normalization|3nf|2nf|1nf|bcnf|acid|acid properties|definition of|concept of|explain the concept)\b", norm))
+        if not is_concept and re.search(r"^what is\b", norm) and subject and not re.search(r"\b(code|fee|fees|syllabus|exam|timetable)\b", norm):
+            is_concept = True
 
-        # 5. Greetings & Conversation Starters
-        if re.search(r"^(hi|hello|hey|namaste|good morning|good afternoon|good evening)\b", norm):
-            scored.append(("greeting", 0.98))
+        if is_concept and subject:
+            ent = dict(base_entities)
+            ent.update({"subject": subject, "semester": semester})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=IntentString(f"kb_concept_{subject}", aliases=[StandardIntent.SUBJECT_DETAILS.value]),
+                confidence=0.95,
+                entities=ent,
+                subject_focus=subject,
+                semester_focus=semester,
+                question_type="concept",
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
 
-        if re.search(r"\b(bye|goodbye|see you|thank you|thanks)\b", norm):
-            scored.append(("farewell", 0.98))
+        # Intent 13: DOCUMENTS_REQUIRED
+        if re.search(r"\b(documents|document|certificates|paperwork|marksheets)\b", norm) and re.search(r"\b(required|needed|admission|submit|bring|list)\b", norm):
+            ent = dict(base_entities)
+            ent["category"] = "admission_documents"
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=StandardIntent.DOCUMENTS_REQUIRED.value,
+                confidence=0.95,
+                entities=ent,
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
 
-        # Sort candidate scores descending
-        scored.sort(key=lambda x: x[1], reverse=True)
+        # Intent 2: SYLLABUS_OVERVIEW (Check before generic credits when semester and subjects are queried)
+        has_syllabus_kw = bool(re.search(r"\b(syllabus|curriculum|course scheme|full syllabus|show syllabus|academic scheme)\b", norm))
+        has_subjects_and_sem = bool(semester and re.search(r"\b(subjects|courses)\b", norm))
+        if has_syllabus_kw or has_subjects_and_sem:
+            sem_val = semester or 2
+            legacy_sem_intent = f"kb_syllabus_mca_sem{sem_val}"
+            ent = dict(base_entities)
+            ent.update({"semester": sem_val, "program": "MCA"})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=IntentString(StandardIntent.SYLLABUS_OVERVIEW.value, aliases=[legacy_sem_intent]),
+                confidence=0.96,
+                entities=ent,
+                semester_focus=sem_val,
+                question_type="syllabus",
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
 
-        if scored:
-            top_intent, top_score = scored[0]
-            return top_intent, top_score, scored
+        # Intent 7: CREDITS_AND_MARKS
+        if re.search(r"\b(credit|credits|marks|passing marks|total marks|marks distribution|scheme marks)\b", norm):
+            ent = dict(base_entities)
+            ent.update({"subject": subject, "semester": semester})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=StandardIntent.CREDITS_AND_MARKS.value,
+                confidence=0.95,
+                entities=ent,
+                subject_focus=subject,
+                semester_focus=semester,
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
 
-        # Fallback out of domain
-        return "general_knowledge_search", 0.45, [("general_knowledge_search", 0.45)]
+        # Intent 5: EXAM_SCHEDULE
+        if re.search(r"\b(exam|examination|mid sem|end sem|mse|ese|paper)\b", norm) and re.search(r"\b(timetable|time table|schedule|date|dates|when|when is|when are)\b", norm):
+            ent = dict(base_entities)
+            ent.update({"subject": subject, "semester": semester})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=StandardIntent.EXAM_SCHEDULE.value,
+                confidence=0.95,
+                entities=ent,
+                subject_focus=subject,
+                semester_focus=semester,
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
+
+        # Intent 4: TIMETABLE (Class / Lecture timetable)
+        if re.search(r"\b(timetable|time table|lecture schedule|class schedule|when are my lectures|class timings|lecture timings)\b", norm) or (
+            re.search(r"\b(open|show|give|view)\b", norm) and re.search(r"\b(timetable|time table|schedule)\b", norm)
+        ):
+            ent = dict(base_entities)
+            ent.update({"semester": semester or 2, "timetable_type": "lecture"})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=StandardIntent.TIMETABLE.value,
+                confidence=0.95,
+                entities=ent,
+                semester_focus=semester or 2,
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
+
+        # Intent 16: PRACTICAL_AND_LAB_DETAILS
+        if (subject and "lab" in subject) or (re.search(r"\b(lab|practical|practicals|laboratory|experiments)\b", norm) and not re.search(r"\b(syllabus)\b", norm)):
+            ent = dict(base_entities)
+            ent.update({"subject": subject, "semester": semester})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=StandardIntent.PRACTICAL_AND_LAB_DETAILS.value,
+                confidence=0.92,
+                entities=ent,
+                subject_focus=subject,
+                semester_focus=semester,
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
+
+        # Intent 2: SYLLABUS_OVERVIEW
+        if re.search(r"\b(syllabus|curriculum|subjects in|what subjects|course scheme|full syllabus|show syllabus|academic scheme)\b", norm):
+            sem_val = semester or 2
+            legacy_sem_intent = f"kb_syllabus_mca_sem{sem_val}"
+            ent = dict(base_entities)
+            ent.update({"semester": sem_val, "program": "MCA"})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=IntentString(StandardIntent.SYLLABUS_OVERVIEW.value, aliases=[legacy_sem_intent]),
+                confidence=0.96,
+                entities=ent,
+                semester_focus=sem_val,
+                question_type="syllabus",
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
+
+        # Intent 8: FEES
+        if re.search(r"\b(fee|fees|cost|tuition|installment|payment|charges)\b", norm):
+            ent = dict(base_entities)
+            ent.update({"program": "MCA"})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=IntentString(StandardIntent.FEES.value, aliases=["fees_mca"]),
+                confidence=0.95,
+                entities=ent,
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
+
+        # Intent 12: ELIGIBILITY
+        if re.search(r"\b(eligibility|eligible|criteria|who can apply|qualification required|cutoff|cut off)\b", norm):
+            ent = dict(base_entities)
+            ent.update({"program": "MCA"})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=StandardIntent.ELIGIBILITY.value,
+                confidence=0.94,
+                entities=ent,
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
+
+        # Intent 9: ADMISSION
+        if re.search(r"\b(admission|admissions|how to apply|cap round|cap rounds|dte cap|cet cell|seat allotment)\b", norm):
+            ent = dict(base_entities)
+            ent.update({"program": "MCA"})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=StandardIntent.ADMISSION.value,
+                confidence=0.94,
+                entities=ent,
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
+
+        # Intent 10: FACULTY_DETAILS
+        if re.search(r"\b(hod|head of department|rohan kokate|kokate|principal|sonekar|faculty|teacher|prof|professor|chetan padole|padole)\b", norm):
+            ent = dict(base_entities)
+            ent.update({"name": "Prof. Rohan Kokate" if "kokate" in norm or "hod" in norm else None})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=StandardIntent.FACULTY_DETAILS.value,
+                confidence=0.95,
+                entities=ent,
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
+
+        # Intent 11: DEPARTMENT_INFORMATION
+        if re.search(r"\b(mca department|about mca|mca intake|capacity|seats|departments)\b", norm):
+            ent = dict(base_entities)
+            ent.update({"program": "MCA"})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=StandardIntent.DEPARTMENT_INFORMATION.value,
+                confidence=0.90,
+                entities=ent,
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
+
+        # Intent 14: CONTACT_INFORMATION
+        if re.search(r"\b(contact|phone|email|address|location|helpline|how to reach|bus|transport)\b", norm):
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=StandardIntent.CONTACT_INFORMATION.value,
+                confidence=0.95,
+                entities=dict(base_entities),
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
+
+        # Intent 15: ACADEMIC_CALENDAR
+        if re.search(r"\b(calendar|academic calendar|session start|term start|vacation|holidays|semester start)\b", norm):
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=StandardIntent.ACADEMIC_CALENDAR.value,
+                confidence=0.94,
+                entities=dict(base_entities),
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
+
+        # Intent 3: SUBJECT_DETAILS (If subject is mentioned specifically)
+        if subject:
+            ent = dict(base_entities)
+            ent.update({"subject": subject, "semester": semester})
+            return QuestionAnalysis(
+                raw_query=raw_query,
+                normalized_query=norm,
+                primary_intent=IntentString(StandardIntent.SUBJECT_DETAILS.value, aliases=[f"kb_concept_{subject}"]),
+                confidence=0.90,
+                entities=ent,
+                subject_focus=subject,
+                semester_focus=semester,
+                is_multipart=is_multipart,
+                sub_questions=sub_questions,
+            )
+
+        # Intent 18: UNKNOWN_QUERY (Zero hallucination fallback)
+        return QuestionAnalysis(
+            raw_query=raw_query,
+            normalized_query=norm,
+            primary_intent=StandardIntent.UNKNOWN_QUERY.value,
+            confidence=0.0,
+            entities=dict(base_entities),
+            is_multipart=is_multipart,
+            sub_questions=sub_questions,
+        )
+
+    @classmethod
+    def _resolve_history_context(cls, history: List[Dict[str, str]]) -> Dict[str, Any]:
+        """Inspect recent conversation history to extract persistent entities."""
+        context: Dict[str, Any] = {
+            "last_semester": None,
+            "last_subject": None,
+            "subject_list": [],
+        }
+
+        for msg in reversed(history):
+            content = msg.get("content", "").lower()
+
+            # Detect semester from bot or user content
+            if not context["last_semester"]:
+                if "semester 2" in content or "sem 2" in content or "sem-ii" in content:
+                    context["last_semester"] = 2
+                elif "semester 1" in content or "sem 1" in content or "sem-i" in content:
+                    context["last_semester"] = 1
+
+            # Detect subject mentions
+            if not context["last_subject"]:
+                for s_key in cls.SUBJECT_MAP:
+                    if s_key in content:
+                        context["last_subject"] = s_key
+                        break
+
+            # If previous bot message contained a syllabus scheme list, record subject list
+            if "academic scheme & syllabus" in content or "mca semester 2" in content:
+                context["subject_list"] = [
+                    "dbms", "ai", "python", "cyber_security", "php", "dbms_lab", "python_lab", "php_lab"
+                ]
+            elif "mca semester 1" in content:
+                context["subject_list"] = [
+                    "dsa", "java", "os", "discrete_math", "cao", "dsa_lab", "java_lab", "web_lab"
+                ]
+
+        return context
+
+    @classmethod
+    def _check_follow_up(
+        cls, raw: str, norm: str, history_context: Dict[str, Any]
+    ) -> Tuple[bool, Optional[str], Optional[str]]:
+        """Identify follow-up queries like 'tell me about the first subject' or 'give me more details'."""
+        subject_list = history_context.get("subject_list", [])
+        last_subj = history_context.get("last_subject")
+
+        # 1. Ordinal reference: "tell me about the first subject", "what about the 2nd one"
+        for word, index in cls.ORDINALS.items():
+            pattern = r"\b(" + re.escape(word) + r")\s+(subject|course|paper|one)\b"
+            if re.search(pattern, norm):
+                if subject_list and index < len(subject_list):
+                    return True, subject_list[index], StandardIntent.SUBJECT_DETAILS.value
+                elif history_context.get("last_semester") == 2:
+                    default_sem2 = ["dbms", "ai", "python", "cyber_security", "php"]
+                    if index < len(default_sem2):
+                        return True, default_sem2[index], StandardIntent.SUBJECT_DETAILS.value
+
+        # 2. "Give me more details" / "explain more" / "tell me more"
+        if re.search(r"\b(more details|give me more details|tell me more|elaborate|explain more)\b", norm):
+            if last_subj:
+                return True, last_subj, StandardIntent.SUBJECT_DETAILS.value
+            if history_context.get("last_semester"):
+                return True, None, StandardIntent.SYLLABUS_OVERVIEW.value
+
+        # 3. "What about practicals?" / "what about labs?"
+        if re.search(r"\b(what about practicals|what about labs|tell me about practicals|and practicals)\b", norm):
+            return True, f"{last_subj}_lab" if last_subj and f"{last_subj}_lab" in cls.SUBJECT_MAP else "dbms_lab", StandardIntent.PRACTICAL_AND_LAB_DETAILS.value
+
+        # 4. "How many credits does it have?" / "and the credits?"
+        if re.search(r"\b(how many credits does it have|credits for it|and credits|what are its credits)\b", norm):
+            if last_subj:
+                return True, last_subj, StandardIntent.CREDITS_AND_MARKS.value
+
+        return False, None, None

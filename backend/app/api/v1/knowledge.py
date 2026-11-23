@@ -1,3 +1,4 @@
+
 """Admin Knowledge Base Management Endpoints for CampusIQ."""
 
 from typing import Any, Dict, List, Optional

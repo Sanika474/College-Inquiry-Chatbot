@@ -1,7 +1,7 @@
 """Chat Orchestrator for CampusIQ.
 
-Coordinates rule-based classification, database knowledge retrieval, knowledge-base
-chunk search, contextual answer building, conversation persistence, and grounded AI fallback.
+Coordinates Question Understanding, Knowledge Graph retrieval, intent-specific answer
+generation, document link management, conversation history persistence, and grounded AI fallback.
 """
 
 from typing import Any, Dict, List, Optional
@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session
 from app.chatbot.ai_provider import AIProvider
 from app.chatbot.answer_builder import AnswerBuilder
 from app.chatbot.intent_catalog import IntentCategory
-from app.chatbot.intent_classifier import IntentClassifier, QuestionAnalysis
+from app.chatbot.intent_classifier import IntentClassifier, IntentString, QuestionAnalysis, StandardIntent
+from app.chatbot.knowledge_graph import knowledge_graph
 from app.chatbot.retrieval import KnowledgeRetriever
 from app.chatbot.rule_engine import RuleEngine, RuleMatchResult
 from app.models.conversation import Conversation, Message
@@ -61,7 +62,7 @@ class ChatOrchestrator:
             .order_by(Message.created_at.asc())
             .all()
         )
-        history = [{"sender": m.sender, "content": m.content} for m in past_msgs[-6:]]
+        history = [{"sender": m.sender, "content": m.content} for m in past_msgs[-8:]]
 
         # 2. Record incoming user message
         user_msg = Message(
@@ -82,72 +83,29 @@ class ChatOrchestrator:
         final_intent = "unknown"
         final_confidence = 1.0
         final_category = IntentCategory.UNKNOWN.value
+        response_format = "text"
+        structured_items: List[Dict[str, Any]] = []
+        document_links: List[Dict[str, Any]] = []
 
-        # 3. Check for queries regarding unextracted/scanned documents
-        scanned_notice = retriever.check_scanned_document_inquiry(user_message)
-        if scanned_notice:
-            answer_text = scanned_notice["text"]
-            sources = scanned_notice["sources"]
-            suggestions = scanned_notice.get("suggestions", [])
-            final_intent = "kb_scanned_document_notice"
-            final_category = "knowledge_base"
+        # 3. Check legacy ambiguous queries (e.g. single word "fees")
+        legacy_match: RuleMatchResult = self.rule_engine.classify(user_message)
+        if legacy_match.is_ambiguous and legacy_match.clarification_prompt:
+            answer_text = legacy_match.clarification_prompt
+            processing_engine = "clarification"
+            sources = ["CampusIQ Query Clarifier"]
+            suggestions = legacy_match.suggestions
+            final_intent = legacy_match.intent_id
+            final_category = legacy_match.category
+            final_confidence = legacy_match.confidence
+            response_format = "clarification"
 
-        # 4. Perform Question Structural Analysis
-        analysis: QuestionAnalysis = self.intent_classifier.analyze_question(user_message, history)
-
-        # 5. Handle Multi-Part Queries
-        if not answer_text and analysis.is_multipart and len(analysis.sub_questions) >= 2:
-            sub_answers: List[Dict[str, Any]] = []
-            for sub_q in analysis.sub_questions:
-                sub_match = self.rule_engine.classify(sub_q)
-                if sub_match.intent_id != "unknown":
-                    sub_data = self._execute_institutional_rule(retriever, sub_match)
-                    sub_answers.append({
-                        "query_title": sub_q,
-                        "text": sub_data.get("text", ""),
-                        "sources": sub_data.get("sources", []),
-                        "suggestions": sub_data.get("suggestions", []),
-                    })
-                else:
-                    # Try chunk retrieval for sub-question
-                    chunks = retriever.search_knowledge_chunks(sub_q, limit=2)
-                    if chunks:
-                        sub_answers.append({
-                            "query_title": sub_q,
-                            "text": chunks[0]["content"],
-                            "sources": [chunks[0]["citation"]],
-                            "suggestions": [],
-                        })
-                    else:
-                        sub_answers.append({
-                            "query_title": sub_q,
-                            "text": "Information for this specific part is not present in the institutional documents.",
-                            "sources": [],
-                            "suggestions": [],
-                        })
-
-            multipart_res = self.answer_builder.build_multipart_answer(sub_answers)
-            answer_text = multipart_res["text"]
-            sources = multipart_res["sources"]
-            suggestions = multipart_res["suggestions"]
-            final_intent = "multipart_inquiry"
-            final_category = "multipart"
-            processing_engine = "rule_based"
-
-        # 6. Standard Rule Engine Matching (Greetings, Clarification, Institutional Rules)
-        match: RuleMatchResult = self.rule_engine.classify(user_message)
-
+        # 4. Perform Question Understanding & Entity Extraction
         if not answer_text:
-            if match.is_ambiguous and match.clarification_prompt:
-                answer_text = match.clarification_prompt
-                processing_engine = "clarification"
-                sources = ["CampusIQ Query Clarifier"]
-                suggestions = match.suggestions
-                final_intent = match.intent_id
-                final_category = match.category
-                final_confidence = match.confidence
+            analysis: QuestionAnalysis = self.intent_classifier.analyze_question(user_message, history)
+            intent = analysis.primary_intent
 
-            elif match.intent_id == "greeting":
+            # Intent 1: GREETING
+            if intent == StandardIntent.GREETING.value:
                 answer_text = (
                     "Hello! 👋 Welcome to **CampusIQ — Intelligent College Companion** for "
                     "**JD College of Engineering & Management (JDCOEM), Nagpur**.\n\n"
@@ -157,117 +115,215 @@ class ChatOrchestrator:
                     "Prof. Rohan Kokate, TBI incubation, or campus placements!"
                 )
                 sources = ["CampusIQ Assistant"]
-                suggestions = match.suggestions
+                suggestions = [
+                    "MCA Sem 2 Syllabus",
+                    "What is the MCA fee?",
+                    "Which documents are required for admission?",
+                    "Show MCA timetable",
+                ]
                 final_intent = "greeting"
                 final_category = IntentCategory.GREETING.value
+                final_confidence = analysis.confidence
 
-            elif match.intent_id == "farewell":
-                answer_text = (
-                    "Thank you for connecting with CampusIQ! If you have any further questions regarding "
-                    "MCA admissions, fees, or JDCOEM campus life, feel free to ask anytime. Have a successful day! 😊"
+            # Intent 2: SYLLABUS_OVERVIEW
+            elif intent == StandardIntent.SYLLABUS_OVERVIEW.value:
+                sem = analysis.semester_focus or 2
+                res = self.answer_builder.build_syllabus_overview(semester=sem)
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                structured_items = res.get("items", [])
+                document_links = res.get("links", [])
+                final_intent = IntentString("SYLLABUS_OVERVIEW", aliases=[f"kb_syllabus_mca_sem{sem}"])
+                final_category = "syllabus"
+                final_confidence = 0.95
+
+            # Intent 3: SUBJECT_DETAILS
+            elif intent == StandardIntent.SUBJECT_DETAILS.value or (isinstance(intent, str) and intent.startswith("kb_concept_")):
+                subj = analysis.subject_focus or "dbms"
+                res = self.answer_builder.build_subject_details(subj)
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                structured_items = res.get("items", [])
+                document_links = res.get("links", [])
+                final_intent = IntentString("SUBJECT_DETAILS", aliases=[f"kb_concept_{subj}"])
+                final_category = "subject_details"
+                final_confidence = 0.95
+
+            # Intent 4: TIMETABLE
+            elif intent == StandardIntent.TIMETABLE.value:
+                sem = analysis.semester_focus or 2
+                res = self.answer_builder.build_timetable(semester=sem)
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                structured_items = res.get("items", [])
+                document_links = res.get("links", [])
+                final_intent = "TIMETABLE"
+                final_category = "timetable"
+                final_confidence = 0.95
+
+            # Intent 5: EXAM_SCHEDULE
+            elif intent == StandardIntent.EXAM_SCHEDULE.value:
+                res = self.answer_builder.build_exam_schedule(
+                    subject_key=analysis.subject_focus,
+                    semester=analysis.semester_focus or 2,
                 )
-                sources = ["CampusIQ Assistant"]
-                final_intent = "farewell"
-                final_category = IntentCategory.FAREWELL.value
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                document_links = res.get("links", [])
+                final_intent = "EXAM_SCHEDULE"
+                final_category = "examination"
+                final_confidence = 0.95
 
-            elif match.intent_id == "help_capabilities":
-                answer_text = (
-                    "**CampusIQ — JDCOEM Academic Services & Capabilities:**\n\n"
-                    "As the authoritative AI and rule-based assistant for JD College of Engineering & Management, I provide factual data on:\n"
-                    "- **MCA Department:** Curriculum, 2-year duration, intake (120 seats), and faculty roster\n"
-                    "- **Tuition Fees:** FRA-approved multi-year fee schedules (MCA: ₹91,500/year, B.Tech: ₹1,00,000/year)\n"
-                    "- **Admissions & DTE CAP:** Eligibility criteria, MAH-MCA-CET cutoffs, and DTE Choice Code 04138\n"
-                    "- **Department Leadership:** Principal Dr. Shrikant V. Sonekar, HOD Prof. Rohan Kokate, Prof. Chetan Padole\n"
-                    "- **Incubation & Innovation:** Technology Business Incubator (TBI) for student software startups\n"
-                    "- **Campus Facilities:** Central Digital Library, AI/GPU Labs, Hostels, and Citywide Bus Transport\n"
-                    "- **Campus Regulations:** Mandatory 75% attendance rule and anti-ragging policies"
+            # Intent 6: COURSE_STRUCTURE
+            elif intent == StandardIntent.COURSE_STRUCTURE.value:
+                res = self.answer_builder.build_course_structure(analysis.subject_focus)
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                final_intent = "COURSE_STRUCTURE"
+                final_category = "course_structure"
+                final_confidence = 0.92
+
+            # Intent 7: CREDITS_AND_MARKS
+            elif intent == StandardIntent.CREDITS_AND_MARKS.value:
+                res = self.answer_builder.build_credits_and_marks(
+                    analysis.subject_focus, analysis.semester_focus
                 )
-                sources = ["CampusIQ Capability Matrix"]
-                suggestions = match.suggestions
-                final_intent = "help_capabilities"
-                final_category = IntentCategory.HELP.value
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                structured_items = res.get("items", [])
+                document_links = res.get("links", [])
+                final_intent = "CREDITS_AND_MARKS"
+                final_category = "credits_and_marks"
+                final_confidence = 0.95
 
-            elif match.intent_id != "unknown" and analysis.question_type not in (
-                "syllabus",
-                "question_bank",
-                "concept",
-                "comparison",
-            ):
-                # Standard Institutional Database Lookup
-                inst_data = self._execute_institutional_rule(retriever, match)
+            # Intent 8: FEES
+            elif intent == StandardIntent.FEES.value:
+                # If specific course is in legacy match, check target
+                res = self.answer_builder.build_fees("MCA")
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                structured_items = res.get("items", [])
+                final_intent = "fees_mca"
+                final_category = IntentCategory.COURSE_FEES.value
+                final_confidence = 0.95
+
+            # Intent 9: ADMISSION
+            elif intent == StandardIntent.ADMISSION.value:
+                res = self.answer_builder.build_admission_process()
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                final_intent = "ADMISSION"
+                final_category = IntentCategory.ADMISSION.value
+                final_confidence = 0.94
+
+            # Intent 10: FACULTY_DETAILS
+            elif intent == StandardIntent.FACULTY_DETAILS.value:
+                res = self.answer_builder.build_faculty_info(analysis.entities.get("name"))
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                final_intent = legacy_match.intent_id if "faculty_" in legacy_match.intent_id else "FACULTY_DETAILS"
+                final_category = IntentCategory.FACULTY.value
+                final_confidence = 0.95
+
+            # Intent 11: DEPARTMENT_INFORMATION
+            elif intent == StandardIntent.DEPARTMENT_INFORMATION.value:
+                res = self.answer_builder.build_department_info()
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                final_intent = "DEPARTMENT_INFORMATION"
+                final_category = IntentCategory.DEPARTMENT.value
+                final_confidence = 0.92
+
+            # Intent 12: ELIGIBILITY
+            elif intent == StandardIntent.ELIGIBILITY.value:
+                res = self.answer_builder.build_eligibility()
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                final_intent = "ELIGIBILITY"
+                final_category = IntentCategory.ELIGIBILITY.value
+                final_confidence = 0.94
+
+            # Intent 13: DOCUMENTS_REQUIRED
+            elif intent == StandardIntent.DOCUMENTS_REQUIRED.value:
+                res = self.answer_builder.build_documents_required()
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                final_intent = "DOCUMENTS_REQUIRED"
+                final_category = "documents_required"
+                final_confidence = 0.95
+
+            # Intent 14: CONTACT_INFORMATION
+            elif intent == StandardIntent.CONTACT_INFORMATION.value:
+                res = self.answer_builder.build_contact_info()
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                final_intent = "CONTACT_INFORMATION"
+                final_category = IntentCategory.CONTACT.value
+                final_confidence = 0.95
+
+            # Intent 15: ACADEMIC_CALENDAR
+            elif intent == StandardIntent.ACADEMIC_CALENDAR.value:
+                res = self.answer_builder.build_academic_calendar()
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                document_links = res.get("links", [])
+                final_intent = "ACADEMIC_CALENDAR"
+                final_category = "academic_calendar"
+                final_confidence = 0.94
+
+            # Intent 16: PRACTICAL_AND_LAB_DETAILS
+            elif intent == StandardIntent.PRACTICAL_AND_LAB_DETAILS.value:
+                lab_key = analysis.subject_focus or "dbms_lab"
+                res = self.answer_builder.build_practical_lab(lab_key)
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
+                response_format = res["format"]
+                structured_items = res.get("items", [])
+                document_links = res.get("links", [])
+                final_intent = "PRACTICAL_AND_LAB_DETAILS"
+                final_category = "practicals"
+                final_confidence = 0.94
+
+            # Legacy Rules Fallback: Institutional policy, library, hostel, sports, ragging
+            elif legacy_match.intent_id != "unknown":
+                inst_data = self._execute_institutional_rule(retriever, legacy_match)
                 answer_text = inst_data.get("text", "")
                 sources = inst_data.get("sources", ["College Official Records"])
-                suggestions = inst_data.get("suggestions", match.suggestions)
-                final_intent = match.intent_id
-                final_category = match.category
-                final_confidence = match.confidence
+                suggestions = inst_data.get("suggestions", legacy_match.suggestions)
+                final_intent = legacy_match.intent_id
+                final_category = legacy_match.category
+                final_confidence = legacy_match.confidence
 
-        # 7. Knowledge Base Document Chunk Search (Syllabus, Notes, Question Banks, Concepts)
-        if not answer_text or (match.intent_id == "unknown" and not answer_text):
-            is_academic_query = (
-                analysis.subject_focus is not None
-                or analysis.semester_focus is not None
-                or analysis.question_type in ("syllabus", "question_bank", "concept", "comparison")
-                or analysis.primary_intent.startswith("kb_")
-            )
-
-            if is_academic_query:
-                if analysis.question_type == "syllabus" or analysis.primary_intent.startswith("kb_syllabus"):
-                    chunks = retriever.search_knowledge_chunks(
-                        user_message,
-                        semester=analysis.semester_focus,
-                        subject=analysis.subject_focus,
-                        limit=4,
-                    )
-                    if chunks:
-                        kb_res = self.answer_builder.build_syllabus_answer(
-                            analysis, chunks, analysis.semester_focus
-                        )
-                        answer_text = kb_res["text"]
-                        sources = kb_res["sources"]
-                        suggestions = kb_res["suggestions"]
-                        final_intent = analysis.primary_intent
-                        final_category = "syllabus"
-                        processing_engine = "rule_based"
-
-                elif analysis.question_type == "question_bank" or analysis.primary_intent.startswith("kb_question_bank"):
-                    chunks = retriever.search_knowledge_chunks(
-                        user_message,
-                        subject=analysis.subject_focus,
-                        limit=6,
-                    )
-                    if chunks:
-                        kb_res = self.answer_builder.build_question_bank_answer(
-                            analysis, chunks, analysis.subject_focus
-                        )
-                        answer_text = kb_res["text"]
-                        sources = kb_res["sources"]
-                        suggestions = kb_res["suggestions"]
-                        final_intent = analysis.primary_intent
-                        final_category = "question_bank"
-                        processing_engine = "rule_based"
-
-                else:
-                    # Concept / Definition / Comparison from Notes
-                    chunks = retriever.search_knowledge_chunks(
-                        user_message,
-                        subject=analysis.subject_focus,
-                        limit=4,
-                    )
-                    if chunks and (chunks[0]["score"] >= 1.2 or analysis.subject_focus):
-                        if analysis.question_type == "comparison":
-                            kb_res = self.answer_builder.build_comparison_answer(analysis, chunks)
-                        else:
-                            kb_res = self.answer_builder.build_concept_answer(analysis, chunks)
-
-                        answer_text = kb_res["text"]
-                        sources = kb_res["sources"]
-                        suggestions = kb_res["suggestions"]
-                        final_intent = analysis.primary_intent
-                        final_category = "concept"
-                        processing_engine = "rule_based"
-
-        # 8. Out-of-Domain AI Fallback or Verified Rule-Based Fallback
+        # 5. Out-of-Domain AI Fallback or Zero-Hallucination Fallback
         if not answer_text:
             if self.ai_provider.is_available():
                 ai_res = self.ai_provider.generate_response(user_message)
@@ -275,37 +331,34 @@ class ChatOrchestrator:
                     answer_text = ai_res["text"]
                     processing_engine = "ai_fallback"
                     sources = [ai_res.get("source", "CampusIQ Grounded AI Fallback")]
-                    suggestions = [
-                        "MCA Course Details",
-                        "Prof. Rohan Kokate (HOD MCA)",
-                        "TBI Incubation",
-                        "Contact JDCOEM",
-                    ]
+                    suggestions = ["MCA Course Details", "MCA Sem 2 Syllabus", "What is the MCA fee?"]
                     final_intent = "ai_fallback"
                     final_category = "ai"
 
+            # Check if query is academic/notes concept
+            if not answer_text and analysis.subject_focus:
+                chunks = retriever.search_knowledge_chunks(user_message, subject=analysis.subject_focus, limit=2)
+                if chunks and chunks[0]["score"] >= 3.0:
+                    top = chunks[0]
+                    answer_text = (
+                        f"## 📘 {top.get('section_heading') or 'Academic Notes'}\n\n"
+                        f"{top['content'][:400]}...\n\n"
+                        f"*Source: {top['citation']}*"
+                    )
+                    sources = [top["citation"]]
+                    final_intent = IntentString("academic_notes", aliases=[f"kb_concept_{analysis.subject_focus}"])
+                    final_category = "notes"
+
             if not answer_text:
-                answer_text = (
-                    "I couldn't locate specific information for that in the JDCOEM official catalog. "
-                    "Here are some popular topics you can ask me about:\n\n"
-                    "- MCA course fee schedule (FRA approved: ₹91,500/year)\n"
-                    "- MCA admission eligibility & MAH-MCA-CET CAP rounds (DTE Code: 04138)\n"
-                    "- MCA HOD Prof. Rohan Kokate & Project Coordinator Prof. Chetan Padole\n"
-                    "- Technology Business Incubator (TBI) & student startup support\n"
-                    "- Campus placements (TCS, Infosys, Wipro, Capgemini) & bus transport routes"
-                )
-                processing_engine = "rule_based"
-                sources = ["JDCOEM Information Helpdesk"]
+                res = self.answer_builder.build_unknown_response()
+                answer_text = res["text"]
+                sources = res["sources"]
+                suggestions = res["suggestions"]
                 final_intent = "unknown"
                 final_category = IntentCategory.UNKNOWN.value
-                suggestions = [
-                    "MCA Course Details",
-                    "MCA Fees (FRA Sanctioned)",
-                    "Who is the Principal?",
-                    "TBI Startup Incubation",
-                ]
+                final_confidence = 0.0
 
-        # 9. Record bot response in database
+        # 6. Record bot response in database
         bot_msg = Message(
             conversation_id=conversation.id,
             sender="bot",
@@ -318,13 +371,18 @@ class ChatOrchestrator:
         db.add(bot_msg)
         db.commit()
 
+        # Build response payload
         return {
             "conversation_id": conversation.id,
             "message": answer_text,
+            "answer": answer_text,
             "intent": final_intent,
             "category": final_category,
+            "format": response_format,
             "engine": processing_engine,
             "confidence": final_confidence,
+            "items": structured_items,
+            "links": document_links,
             "sources": sources,
             "suggestions": suggestions,
             "created_at": bot_msg.created_at,

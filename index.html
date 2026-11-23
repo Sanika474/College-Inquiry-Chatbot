@@ -5,10 +5,184 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CampusIQ — JD College of Engineering & Management (JDCOEM) | MCA Companion</title>
   <meta name="description" content="CampusIQ: Intelligent College Companion for JD College of Engineering & Management (JDCOEM), Nagpur. Authoritative inquiry assistant for the Master of Computer Applications (MCA) department.">
-  <link rel="stylesheet" href="assets/css/campusiq.css">
+  <link rel="stylesheet" href="assets/css/campusiq.css?v=3.0">
   <link rel="icon" type="image/png" href="images/favicon.png" onerror="this.href='images/icon.png'">
-  <!-- Spline Viewer Component -->
-  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.72/build/spline-viewer.js"></script>
+  <style>
+    /* Hero Image Showcase Card & Layout */
+    .hero-image-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 4 / 3;
+      max-height: 380px;
+      margin-left: auto;
+      border-radius: var(--radius-lg, 18px);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: var(--bg-surface, #0c1222);
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.75), 
+        0 0 35px rgba(59, 130, 246, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      align-self: center;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+    }
+    .hero-image-container:hover {
+      transform: translateY(-4px);
+      box-shadow: 
+        0 30px 65px -15px rgba(0, 0, 0, 0.85), 
+        0 0 45px rgba(59, 130, 246, 0.26),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    }
+    .hero-image-container .hero-campus-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+      border-radius: inherit;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hero-image-container:hover .hero-campus-img {
+      transform: scale(1.03);
+    }
+    .hero-image-tag {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: rgba(7, 10, 18, 0.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      z-index: 3;
+      pointer-events: none;
+    }
+    .hero-image-tag .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      display: inline-block;
+    }
+    .hero-image-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(
+        180deg, 
+        rgba(7, 10, 18, 0.22) 0%, 
+        transparent 30%, 
+        transparent 65%, 
+        rgba(7, 10, 18, 0.78) 100%
+      );
+      border-radius: inherit;
+      z-index: 2;
+    }
+    .hero-image-badge {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      background: rgba(7, 10, 18, 0.84);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 0.45rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+      z-index: 3;
+      pointer-events: none;
+      max-width: calc(100% - 28px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hero-image-badge svg {
+      color: #60a5fa;
+      flex-shrink: 0;
+    }
+    /* Slideshow Engine Styles */
+    .hero-slides-wrapper {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .hero-slide {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      opacity: 0;
+      transform: scale(1.04);
+      transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
+      display: block;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .hero-slide.active {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+      z-index: 1;
+    }
+    .hero-slide-dots {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 4;
+      background: rgba(7, 10, 18, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 0.35rem 0.6rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    }
+    .slide-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.35);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-block;
+    }
+    .slide-dot:hover {
+      background: rgba(255, 255, 255, 0.75);
+    }
+    .slide-dot.active {
+      background: #60a5fa;
+      box-shadow: 0 0 6px #60a5fa;
+      transform: scale(1.2);
+    }
+    @media (max-width: 968px) {
+      .hero-image-container {
+        margin: 0 auto !important;
+        max-width: 440px;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="ambient-bg"></div>
@@ -55,7 +229,7 @@
       </h1>
 
       <p class="hero-lead">
-        Your authoritative digital companion for <strong>JD College of Engineering and Management (JDCOEM), Nagpur</strong>. Get instant, verified facts on <strong>MCA Admissions</strong>, FRA fee schedules, capstone project incubation at TBI, and campus placements.
+        Your smart AI companion for <strong>JD College of Engineering & Management (JDCOEM)</strong>. Get instant, verified answers on <strong>MCA admissions</strong>, fees, and placements.
       </p>
 
       <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
@@ -84,13 +258,158 @@
       </div>
     </div>
 
-    <!-- 3D Interactive Spline Visual -->
-    <div class="spline-container">
-      <spline-viewer url="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"></spline-viewer>
-      <div style="position: absolute; bottom: 12px; left: 16px; background: rgba(7, 10, 18, 0.75); backdrop-filter: blur(8px); padding: 0.35rem 0.75rem; border-radius: var(--radius-full); font-size: 0.75rem; color: var(--text-muted); border: 1px solid var(--border-subtle);">
-        Interactive 3D Canvas • Drag to Rotate
+    <!-- Authentic JDCOEM Campus Visual Showcase Slideshow -->
+    <div class="hero-image-container" id="heroCampusSlideshow" style="position: relative; width: 100%; max-width: 480px; aspect-ratio: 4 / 3; max-height: 380px; margin-left: auto; border-radius: 18px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.15); background: #0c1222; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 35px rgba(59, 130, 246, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.12); align-self: center;">
+      <!-- Top Tag Badge with Live Indicator -->
+      <div class="hero-image-tag" style="position: absolute; top: 14px; left: 14px; background: rgba(7, 10, 18, 0.82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.15); display: inline-flex; align-items: center; gap: 0.45rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35); z-index: 4; pointer-events: none;">
+        <span class="live-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981; display: inline-block;"></span>
+        Official Campus
+      </div>
+
+      <!-- Slide Dots Indicator (Top Right) -->
+      <div class="hero-slide-dots" id="heroSlideDots" style="position: absolute; top: 14px; right: 14px; display: flex; align-items: center; gap: 6px; z-index: 4; background: rgba(7, 10, 18, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 0.35rem 0.6rem; border-radius: 9999px; border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);">
+        <span class="slide-dot active" data-index="0" title="Main Academic Building" style="width: 7px; height: 7px; border-radius: 50%; background: #60a5fa; box-shadow: 0 0 6px #60a5fa; cursor: pointer; transition: all 0.3s ease; display: inline-block; transform: scale(1.2);"></span>
+        <span class="slide-dot" data-index="1" title="Campus Grounds & Lawns" style="width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.35); cursor: pointer; transition: all 0.3s ease; display: inline-block;"></span>
+        <span class="slide-dot" data-index="2" title="Central Courtyard & Arches" style="width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.35); cursor: pointer; transition: all 0.3s ease; display: inline-block;"></span>
+        <span class="slide-dot" data-index="3" title="Campus Boulevard & Wings" style="width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.35); cursor: pointer; transition: all 0.3s ease; display: inline-block;"></span>
+        <span class="slide-dot" data-index="4" title="Quadrangle & Corridors" style="width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.35); cursor: pointer; transition: all 0.3s ease; display: inline-block;"></span>
+      </div>
+
+      <!-- Slides Container -->
+      <div class="hero-slides-wrapper" style="position: absolute; inset: 0; width: 100%; height: 100%;">
+        <!-- Slide 1: Main Academic Building -->
+        <img 
+          src="images/campus_slide_1.jpg" 
+          alt="JD College of Engineering and Management (JDCOEM) Nagpur Main Academic Building" 
+          class="hero-slide active"
+          data-caption="JDCOEM Main Academic Building &bull; Nagpur"
+          style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: 1; transform: scale(1); transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out; display: block; z-index: 1;"
+          loading="eager"
+        />
+
+        <!-- Slide 2: Campus Grounds & Lawns -->
+        <img 
+          src="images/campus_slide_2.jpg" 
+          alt="JDCOEM Campus Grounds, Lawns and Department Blocks" 
+          class="hero-slide"
+          data-caption="JDCOEM Campus Grounds &amp; Lawns"
+          style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: 0; transform: scale(1.04); transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out; display: block; z-index: 0;"
+          loading="eager"
+        />
+
+        <!-- Slide 3: Central Courtyard & Arches -->
+        <img 
+          src="images/campus_slide_3.jpg" 
+          alt="JDCOEM Central Courtyard, Stone Tower &amp; Architectural Arches" 
+          class="hero-slide"
+          data-caption="Central Courtyard &amp; Architectural Arches"
+          style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: 0; transform: scale(1.04); transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out; display: block; z-index: 0;"
+          loading="eager"
+        />
+
+        <!-- Slide 4: Campus Boulevard & Academic Wings -->
+        <img 
+          src="images/campus_slide_4.jpg" 
+          alt="JDCOEM Campus Boulevard, Palm Avenue and Academic Wings" 
+          class="hero-slide"
+          data-caption="Campus Boulevard &amp; Academic Wings"
+          style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: 0; transform: scale(1.04); transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out; display: block; z-index: 0;"
+          loading="eager"
+        />
+
+        <!-- Slide 5: Open-Air Quadrangle & Corridors -->
+        <img 
+          src="images/campus_slide_5.jpg" 
+          alt="JDCOEM Open-Air Courtyard &amp; Internal Academic Corridors" 
+          class="hero-slide"
+          data-caption="Open-Air Quadrangle &amp; Brick Corridors"
+          style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: 0; transform: scale(1.04); transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out; display: block; z-index: 0;"
+          loading="eager"
+        />
+      </div>
+
+      <!-- Subtle Gradient Overlay -->
+      <div class="hero-image-overlay" style="position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(7, 10, 18, 0.22) 0%, transparent 30%, transparent 65%, rgba(7, 10, 18, 0.78) 100%); border-radius: inherit; z-index: 2;"></div>
+
+      <!-- Dynamic Location / Caption Badge -->
+      <div class="hero-image-badge" style="position: absolute; bottom: 14px; left: 14px; background: rgba(7, 10, 18, 0.84); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 0.45rem 0.9rem; border-radius: 9999px; font-size: 0.78rem; font-weight: 600; color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.16); display: inline-flex; align-items: center; gap: 0.45rem; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45); z-index: 3; pointer-events: none; max-width: calc(100% - 28px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #60a5fa; flex-shrink: 0;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span id="heroCaptionText">JDCOEM Main Academic Building &bull; Nagpur</span>
       </div>
     </div>
+
+    <!-- Campus Slideshow Auto-Cycle Script (Every 3 seconds) -->
+    <script>
+      (function() {
+        const slides = document.querySelectorAll('#heroCampusSlideshow .hero-slide');
+        const dots = document.querySelectorAll('#heroSlideDots .slide-dot');
+        const captionText = document.getElementById('heroCaptionText');
+        if (!slides.length) return;
+
+        let currentIndex = 0;
+        let slideTimer = null;
+
+        function setSlide(newIndex) {
+          if (newIndex === currentIndex) return;
+
+          // Transition out current slide
+          slides[currentIndex].classList.remove('active');
+          slides[currentIndex].style.opacity = '0';
+          slides[currentIndex].style.transform = 'scale(1.04)';
+          slides[currentIndex].style.zIndex = '0';
+
+          if (dots[currentIndex]) {
+            dots[currentIndex].classList.remove('active');
+            dots[currentIndex].style.background = 'rgba(255, 255, 255, 0.35)';
+            dots[currentIndex].style.boxShadow = 'none';
+            dots[currentIndex].style.transform = 'scale(1)';
+          }
+
+          currentIndex = (newIndex + slides.length) % slides.length;
+
+          // Transition in new slide
+          slides[currentIndex].classList.add('active');
+          slides[currentIndex].style.opacity = '1';
+          slides[currentIndex].style.transform = 'scale(1)';
+          slides[currentIndex].style.zIndex = '1';
+
+          if (dots[currentIndex]) {
+            dots[currentIndex].classList.add('active');
+            dots[currentIndex].style.background = '#60a5fa';
+            dots[currentIndex].style.boxShadow = '0 0 6px #60a5fa';
+            dots[currentIndex].style.transform = 'scale(1.2)';
+          }
+
+          if (captionText && slides[currentIndex].dataset.caption) {
+            captionText.innerHTML = slides[currentIndex].dataset.caption;
+          }
+        }
+
+        function nextSlide() {
+          setSlide(currentIndex + 1);
+        }
+
+        function restartTimer() {
+          if (slideTimer) clearInterval(slideTimer);
+          slideTimer = setInterval(nextSlide, 3000);
+        }
+
+        // Allow manual click on indicator dots
+        dots.forEach((dot) => {
+          dot.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const targetIdx = parseInt(this.getAttribute('data-index'), 10);
+            if (!isNaN(targetIdx)) {
+              setSlide(targetIdx);
+              restartTimer();
+            }
+          });
+        });
+
+        // Start continuous 3-second cycle
+        restartTimer();
+      })();
+    </script>
   </main>
 
   <!-- Feature Grid Section -->

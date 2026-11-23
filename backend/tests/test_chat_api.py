@@ -114,3 +114,11 @@ async def test_conversations_listing_and_history():
         # Verify 404 after deletion
         check_res = await client.get(f"/api/v1/chat/conversations/{conv_id}")
         assert check_res.status_code == 404
+
+        # Test bulk deletion
+        await client.post("/api/v1/chat", json={"message": "Temporary conversation 1"})
+        await client.post("/api/v1/chat", json={"message": "Temporary conversation 2"})
+        del_all_res = await client.delete("/api/v1/chat/conversations")
+        assert del_all_res.status_code == 204
+        list_after = await client.get("/api/v1/chat/conversations")
+        assert len(list_after.json()) == 0

@@ -1,6 +1,7 @@
 /**
  * CampusIQ Interactive Chat Controller
- * Manages chat turn cycles, suggestion chips, conversation persistence, and markdown formatting.
+ * Manages chat turn cycles, suggestion chips, conversation persistence,
+ * structured tables, document link action pills, and markdown formatting.
  */
 
 class ChatController {
@@ -23,6 +24,8 @@ class ChatController {
     this.suggestionContainer = document.getElementById('suggestion-chips-container');
     this.newChatButton = document.getElementById('btn-new-chat');
     this.voiceToggle = document.getElementById('btn-voice-toggle');
+    this.deleteChatButton = document.getElementById('btn-delete-chat');
+    this.clearAllHistoryButton = document.getElementById('btn-clear-all-history');
 
     if (!this.chatMessagesContainer || !this.chatInput) return;
 
@@ -37,6 +40,14 @@ class ChatController {
 
     if (this.newChatButton) {
       this.newChatButton.addEventListener('click', () => this.startNewConversation());
+    }
+
+    if (this.deleteChatButton) {
+      this.deleteChatButton.addEventListener('click', () => this.deleteCurrentConversation());
+    }
+
+    if (this.clearAllHistoryButton) {
+      this.clearAllHistoryButton.addEventListener('click', () => this.deleteAllConversations());
     }
 
     if (this.voiceToggle) {
@@ -60,21 +71,52 @@ class ChatController {
 
   async loadConversationHistory() {
     const historyList = document.getElementById('conversation-history-list');
+    const clearAllBtn = document.getElementById('btn-clear-all-history');
     if (!historyList) return;
 
     const res = await window.api.get('/chat/conversations');
     if (res.success && Array.isArray(res.data) && res.data.length > 0) {
       historyList.innerHTML = '';
+      if (clearAllBtn) clearAllBtn.style.display = 'inline-flex';
+
       res.data.forEach((conv) => {
         const item = document.createElement('div');
         item.className = 'chat-history-item';
+        if (conv.id === this.currentConversationId) {
+          item.classList.add('active');
+        }
         item.innerHTML = `
-          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px;">${this.escapeHtml(conv.title)}</span>
-          <span style="font-size: 0.7rem; color: var(--text-muted);">${conv.message_count}</span>
+          <span class="chat-history-title" title="${this.escapeHtml(conv.title)}">${this.escapeHtml(conv.title)}</span>
+          <div class="chat-history-actions">
+            <span style="font-size: 0.7rem; color: var(--text-muted);">${conv.message_count}</span>
+            <button type="button" class="btn-delete-conv" title="Delete conversation" data-id="${conv.id}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
         `;
-        item.addEventListener('click', () => this.openConversation(conv.id));
+
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-delete-conv')) return;
+          this.openConversation(conv.id);
+        });
+
+        const delBtn = item.querySelector('.btn-delete-conv');
+        if (delBtn) {
+          delBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.deleteConversation(conv.id);
+          });
+        }
+
         historyList.appendChild(item);
       });
+    } else {
+      if (clearAllBtn) clearAllBtn.style.display = 'none';
+      historyList.innerHTML = `
+        <div style="padding: 1.25rem 0.5rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+          No past conversations found.
+        </div>
+      `;
     }
   }
 
@@ -90,11 +132,22 @@ class ChatController {
         });
       });
       this.scrollToBottom();
+
+      // Update active highlight in sidebar
+      document.querySelectorAll('.chat-history-item').forEach((item) => {
+        const btn = item.querySelector('.btn-delete-conv');
+        if (btn && btn.getAttribute('data-id') == convId) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
     }
   }
 
   startNewConversation() {
     this.currentConversationId = null;
+    document.querySelectorAll('.chat-history-item').forEach((item) => item.classList.remove('active'));
     this.chatMessagesContainer.innerHTML = `
       <div class="message-bubble message-bot">
         <div class="message-avatar">IQ</div>
@@ -105,12 +158,49 @@ class ChatController {
       </div>
     `;
     this.renderSuggestions([
-      'MCA Course Details',
-      'MCA Fees (FRA Sanctioned)',
+      'MCA Sem 2 Syllabus',
+      'What is the MCA fee?',
+      'Which documents are required for admission?',
+      'Show MCA timetable',
       'Prof. Rohan Kokate (HOD MCA)',
-      'TBI Startup Incubation',
-      'Placement Highlights & Recruiters',
     ]);
+  }
+
+  async deleteConversation(convId) {
+    if (!confirm('Are you sure you want to delete this conversation?')) return;
+
+    const res = await window.api.delete(`/chat/conversations/${convId}`);
+    if (res.success) {
+      window.showToast('Conversation deleted', 'info');
+      if (this.currentConversationId === convId) {
+        this.startNewConversation();
+      }
+      this.loadConversationHistory();
+    } else {
+      window.showToast(res.error || 'Failed to delete conversation', 'error');
+    }
+  }
+
+  async deleteAllConversations() {
+    if (!confirm('Are you sure you want to delete all chat history? This cannot be undone.')) return;
+
+    const res = await window.api.delete('/chat/conversations');
+    if (res.success) {
+      window.showToast('All chat history deleted', 'info');
+      this.startNewConversation();
+      this.loadConversationHistory();
+    } else {
+      window.showToast(res.error || 'Failed to delete history', 'error');
+    }
+  }
+
+  async deleteCurrentConversation() {
+    if (!this.currentConversationId) {
+      this.startNewConversation();
+      window.showToast('Chat history cleared', 'info');
+      return;
+    }
+    await this.deleteConversation(this.currentConversationId);
   }
 
   async handleSendMessage(overrideText = null) {
@@ -148,6 +238,9 @@ class ChatController {
           engine: res.data.engine,
           confidence: res.data.confidence,
           sources: res.data.sources,
+          links: res.data.links,
+          format: res.data.format,
+          items: res.data.items,
         });
 
         // Speak aloud if voice toggle enabled
@@ -190,13 +283,29 @@ class ChatController {
     contentDiv.className = 'message-content';
     contentDiv.innerHTML = this.renderMarkdown(content);
 
+    // Render interactive document link pills if returned by structured schema
+    if (meta && sender === 'bot' && meta.links && Array.isArray(meta.links) && meta.links.length > 0) {
+      const linksContainer = document.createElement('div');
+      linksContainer.className = 'doc-action-container';
+      meta.links.forEach((lnk) => {
+        const linkBtn = document.createElement('a');
+        linkBtn.href = lnk.url;
+        linkBtn.target = '_blank';
+        linkBtn.rel = 'noopener noreferrer';
+        linkBtn.className = 'doc-link-btn';
+        linkBtn.innerHTML = `📄 ${this.escapeHtml(lnk.label)} ↗`;
+        linksContainer.appendChild(linkBtn);
+      });
+      contentDiv.appendChild(linksContainer);
+    }
+
     if (meta && sender === 'bot') {
       const metaDiv = document.createElement('div');
       metaDiv.className = 'message-meta';
 
       let engineBadge = '';
       if (meta.engine === 'rule_based') {
-        engineBadge = `<span style="color: #60a5fa;">● Verified Rule Engine</span>`;
+        engineBadge = `<span style="color: #60a5fa;">● Verified Knowledge Graph</span>`;
       } else if (meta.engine === 'ai_fallback') {
         engineBadge = `<span style="color: #c084fc;">● Grounded AI Assistant</span>`;
       } else if (meta.engine === 'clarification') {
@@ -280,8 +389,8 @@ class ChatController {
     // Italic *text*
     html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
-    // Links [text](url)
-    html = html.replace(/\[(.*?)\]\((https?:\/\/.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; text-decoration: underline;">$1</a>');
+    // Links [text](url) — supports absolute http/https and relative /api/v1 endpoints
+    html = html.replace(/\[(.*?)\]\(((?:https?:\/\/|\/)[^\s\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="doc-link-btn">$1 ↗</a>');
 
     // Blockquotes > text
     html = html.replace(/^&gt;\s*(.*)$/gm, '<blockquote style="border-left: 3px solid #38bdf8; padding-left: 0.75rem; margin: 0.5rem 0; color: var(--text-secondary); background: rgba(56, 189, 248, 0.05); padding-top: 0.25rem; padding-bottom: 0.25rem; border-radius: 0 4px 4px 0;">$1</blockquote>');
@@ -293,33 +402,90 @@ class ChatController {
     // Horizontal Rule
     html = html.replace(/^---$/gm, '<hr style="border: none; border-top: 1px solid var(--border-subtle); margin: 0.75rem 0;">');
 
-    // Bullet Lists & Paragraphs
+    // Parse Markdown Tables
     const lines = html.split('\n');
-    let inList = false;
+    let inTable = false;
+    let tableHeaderDone = false;
+    let inBulletList = false;
+    let inOrderedList = false;
     let result = [];
 
     lines.forEach((line) => {
       const trimmed = line.trim();
+
+      // Table line detection: starts and ends with |
+      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+        // Close lists if open
+        if (inBulletList) { result.push('</ul>'); inBulletList = false; }
+        if (inOrderedList) { result.push('</ol>'); inOrderedList = false; }
+
+        // Separator line e.g. | :--- | :--- |
+        if (/^\|(\s*[:\-]+\s*\|)+$/.test(trimmed)) {
+          tableHeaderDone = true;
+          return;
+        }
+
+        const cells = trimmed.split('|').slice(1, -1).map(c => c.trim());
+
+        if (!inTable) {
+          result.push('<table>');
+          result.push('<thead><tr>' + cells.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>');
+          inTable = true;
+          tableHeaderDone = false;
+        } else {
+          result.push('<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>');
+        }
+        return;
+      } else {
+        if (inTable) {
+          result.push('</tbody></table>');
+          inTable = false;
+          tableHeaderDone = false;
+        }
+      }
+
+      // Ordered List detection: 1. , 2. 
+      const olMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+      if (olMatch) {
+        if (inBulletList) { result.push('</ul>'); inBulletList = false; }
+        if (!inOrderedList) {
+          result.push('<ol>');
+          inOrderedList = true;
+        }
+        result.push(`<li>${olMatch[2]}</li>`);
+        return;
+      } else {
+        if (inOrderedList) {
+          result.push('</ol>');
+          inOrderedList = false;
+        }
+      }
+
+      // Bullet List detection: - , • , * 
       if (trimmed.startsWith('- ') || trimmed.startsWith('• ') || trimmed.startsWith('* ')) {
-        if (!inList) {
+        if (inOrderedList) { result.push('</ol>'); inOrderedList = false; }
+        if (!inBulletList) {
           result.push('<ul style="padding-left: 1.25rem; margin: 0.4rem 0;">');
-          inList = true;
+          inBulletList = true;
         }
         result.push(`<li>${trimmed.substring(2)}</li>`);
+        return;
       } else {
-        if (inList) {
+        if (inBulletList) {
           result.push('</ul>');
-          inList = false;
+          inBulletList = false;
         }
-        if (trimmed) {
-          result.push(`<p style="margin-bottom: 0.4rem;">${line}</p>`);
-        }
+      }
+
+      // Regular paragraph
+      if (trimmed) {
+        result.push(`<p style="margin-bottom: 0.4rem;">${line}</p>`);
       }
     });
 
-    if (inList) {
-      result.push('</ul>');
-    }
+    if (inTable) { result.push('</tbody></table>'); }
+    if (inBulletList) { result.push('</ul>'); }
+    if (inOrderedList) { result.push('</ol>'); }
 
     return result.join('');
   }
@@ -335,6 +501,10 @@ class ChatController {
 }
 
 window.chatbot = new ChatController();
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.chatbot.init();
+  });
+} else {
   window.chatbot.init();
-});
+}
